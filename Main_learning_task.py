@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Jan 20 13:35:37 2023
-Main file of the Grammar_SRTT experiment.
+Created on Tue Jun 03 08:35:37 2025
+Main file of the LMapRMax learning experiment.
 @author: gdf724
 """
 
@@ -11,11 +11,13 @@ import os
 from psychopy import gui
 from psychopy.visual import Window, TextStim, ImageStim, SimpleImageStim
 from psychopy import event, core, monitors, prefs
-prefs.general['audioLib'] = ['pygame']
+from psychopy.sound import Sound
+prefs.general['audioLib'] = ['PTB']
 import numpy as np
 import Grammar_stimuli as gstim
 from datetime import date
 import pandas as pd
+import random
 
 #%% Get subject dialog box
 def subject_dialog(title_text):
@@ -68,46 +70,58 @@ mon = monitors.Monitor('SonyG55')
 mon.setSizePix((2560,1600))
 winsize=(1080,720)
 
+sound_files = ["fi.wav", "pu.wav", "le.wav", "ka.wav", "ty.wav", "jo.wav"]
+
+#Define the sound-key mappings here. 
 if cedrus_RB840:
     allowed_keys = ['a', 'b', 'c', 'f', 'g', 'h']
     continue_keys = ['d', 'e']
     continue_key_name = "one of the bottom keys"
-    img_paths = {
-        "a": "01.jpg",
-        "b": "02.jpg",
-        "c": "03.jpg",
-        "f": "04.jpg",
-        "g": "05.jpg",
-        "h": "06.jpg"
+    sound_paths = {
+        "a": sound_files[0],
+        "b": sound_files[1],
+        "c": sound_files[2],
+        "f": sound_files[3],
+        "g": sound_files[4],
+        "h": sound_files[5]
         }
 else:
     allowed_keys = ['s', 'd', 'f', 'j', 'k', 'l']
     continue_keys = ['space']
     continue_key_name = "space bar"
-    img_paths = {
-        "s": "01.jpg",
-        "d": "02.jpg",
-        "f": "03.jpg",
-        "j": "04.jpg",
-        "k": "05.jpg",
-        "l": "06.jpg"
+    sound_paths = {
+        "s": sound_files[0],
+        "d": sound_files[1],
+        "f": sound_files[2],
+        "j": sound_files[3],
+        "k": sound_files[4],
+        "l": sound_files[5]
         }
 
 #%% Define the paradigm. 
 #SRTT
-nbrOfBlocks = 4
+nbrOfFamiliarizations = 28 #Number of stimuli in the familiarization step
+nbrOfGuidedTrials = 16 #Number of trials the guide stays on at the start of the trial.
+trials_in_accuracy_average = 10 #Number of trials that go into the running average accuracy. 
+guide_accuracy_threshold = 0.7 #Average accuracy 
+nbrOfGuidePeek = 5 #Number of trials that the guide stays on. 
+
+trial_pause = 0.05 #Pause between trials to make the mapping more clear.
+nbrOfBlocks = 3 
 lengthOfSequences = 8 #Number of presses per sequence.
-sequencesPerBlock = 5
+sequencesPerBlock = 2
 pause_block_length = 3 #Pause between blocks length in seconds. 
 pause_trial_length = 0.5 #Pause length for pause trials in seconds.
 nbrOfLongBreaks = 1 #Number of longer breaks that are gone through by button press. 
-grammar_type = '5050' #'8020', '5050', or 'random'
+grammar_type = '8020' #'8020', '5050', or 'random'
 grammar_version = 'a'
 nbrOfStartKeys = 2 #Can be 2 or 1 and alternates between [L3] and [L3,R1].
 begin_with_set_sequences = True
-     
-#%% Define save path
-save_path = '/Users/gdf724/Data/MovementGrammar/GrammarSRTT/' 
+
+
+#%% Define paths
+save_path = '/Users/gdf724/Data/LMapRMax/Piloting' 
+audstim_path = '/Users/gdf724/Code/LMapRMax_paradigm/AudioStimuli/250ms'
 
 #%% Gather subject information and make sure that the subject name is set and make a save folder.
 loop_subjDial=True
@@ -124,6 +138,7 @@ while loop_subjDial:
 with open(os.path.join(savefolder,'settings.txt'),'w') as f:
     f.write('subject:'+str(subj)+'\n')
     f.write('cedrus_RB840:'+str(cedrus_RB840)+'\n')
+    f.write('trial_pause'+str(trial_pause)+'\n')
     f.write('nbrOfBlocks:'+str(nbrOfBlocks)+'\n')
     f.write('lengthOfSequences:'+str(lengthOfSequences)+'\n')
     f.write('sequencesPerBlock:'+str(sequencesPerBlock)+'\n')
@@ -133,6 +148,12 @@ with open(os.path.join(savefolder,'settings.txt'),'w') as f:
     f.write('grammar_type:'+str(grammar_type)+'\n')
     f.write('nbrOfStartKeys:'+str(nbrOfStartKeys)+'\n')
     f.write('begin_with_set_sequences:'+str(begin_with_set_sequences)+'\n')
+    f.write('nbrOfFamiliarizations'+str(nbrOfFamiliarizations)+'\n')
+    f.write('nbrOfGuidedTrials'+str(nbrOfGuidedTrials)+'\n')
+    f.write('trials_in_accuracy_average'+str(trials_in_accuracy_average)+'\n')    
+    f.write('guide_accuracy_threshold'+str(guide_accuracy_threshold)+'\n')
+    f.write('nbrOfGuidePeek'+str(nbrOfGuidePeek)+'\n')
+
 
 #%% Initialize Window and make welcome screen.
 welcome_string = "Welcome to the experiment!\nPut your fingers on the target keys on the keyboard.\nPlease press the indicated keys as quickly as possible.\nAre you ready to start?\nPress "+continue_key_name+" to continue"
@@ -160,25 +181,133 @@ clock = core.Clock()
 #that participants need to be as quick and accurate as possible. 
 warmup_timings = []
 warmup_responses = []
+instr_image_stim = ImageStim(win, image='Instructions_figure.jpeg')
+instr_image_stim.draw()
+win.flip()
 
 for key in allowed_keys:
     #Present correct instruction.
-    trial_stim = SimpleImageStim(win, image=img_paths[key])
-    trial_stim.draw()
-    win.flip()
     t_wu_start = clock.getTime()
-    
+    tmp_sound_name = sound_paths[key]
+    tmp_sound = Sound(os.path.join(audstim_path,tmp_sound_name))
+    tmp_sound.play()
     #Collect keypress. Right now only allows presses on the correct 
     response = event.waitKeys(keyList=allowed_keys+['escape'], clearEvents = True)
     if response[-1] in allowed_keys:
         warmup_timings.append(clock.getTime()-t_wu_start)
         warmup_responses.append(response[-1])
+        if sound_paths[response[-1]]==tmp_sound_name: 
+            feedback_text = TextStim(win, "Correct!", color=(1, 1, 1), pos=(0,0.5), colorSpace='rgb')
+            instr_image_stim.draw()
+            feedback_text.draw()
+            win.flip()
+        else:
+            feedback_text = TextStim(win, "Not correct!", color=(1, 1, 1), pos=(0,0.5), colorSpace='rgb')
+            instr_image_stim.draw()
+            feedback_text.draw()
+            win.flip()
+        core.wait(trial_pause)
+        continue
+    elif response[-1]=='escape':
+        controlled_e()
+
+#%%Familiarization step. Random sequences (but no repeats) with feedback
+fam_string = "Great job!\nSecond warm up!\nPress the indicated key as quickly as possible.\nPress "+continue_key_name+" to continue"
+fam_text = TextStim(win, fam_string, color=(1, 1, 1), colorSpace='rgb')
+fam_text.draw()
+win.flip()
+#Wait until subject has pressed enter or escape
+#kb = Keyboard()
+fam_timings = []
+fam_responses = []
+response = event.waitKeys(keyList=continue_keys+['escape'], clearEvents=True)
+if response[-1] in continue_keys: 
+    fix_text = TextStim(win, "+", color=(1, 1, 1), colorSpace='rgb')
+    fix_text.draw()
+    win.flip()
+if 'escape' in response:
+    controlled_e()
+    
+last_stim=''
+fix_text = TextStim(win, "+", color=(1, 1, 1), colorSpace='rgb')
+mappings_image_stim = ImageStim(win, image='Mappings.jpeg')
+mappings_image_stim.draw()
+fix_text.draw()
+win.flip()
+for fam_itr in range(nbrOfFamiliarizations):
+    tmp_sound_files = [x for x in sound_files if x!=last_stim]
+    tmp_sound_name=random.choices(tmp_sound_files)[0]
+    last_stim=tmp_sound_name
+    tmp_sound = Sound(os.path.join(audstim_path,tmp_sound_name))
+    tmp_sound.play()
+    response = event.waitKeys(keyList=allowed_keys+['escape'], clearEvents=True)
+    if response[-1] in allowed_keys:
+        fam_timings.append(clock.getTime()-t_wu_start)
+        fam_responses.append(response[-1])
+        #Feedback
+        if sound_paths[response[-1]]==tmp_sound_name: 
+            feedback_text = TextStim(win, "Correct!", color=(1, 1, 1), colorSpace='rgb', pos=(0,-0.3), height=0.2)
+            mappings_image_stim.draw()
+            feedback_text.draw()
+            win.flip()
+        else:
+            feedback_text = TextStim(win, "Not correct!", color=(1, 1, 1), colorSpace='rgb', pos=(0,-0.3), height=0.2)
+            mappings_image_stim.draw()
+            feedback_text.draw()
+            win.flip()
+        core.wait(trial_pause)
         continue
     elif response[-1]=='escape':
         controlled_e()
     
-#%%Ready to start screen.
-ready_string = "Great job!\nAre you ready to start the experiment?\nPress "+continue_key_name+" to continue"
+
+#%%Familiarization step with feedback but no guide.
+fam_string = "Great job!\nThird warm up!\nPress the correct key as quickly as possible.\nYou can look at the cheat sheet below the screen but it won't be there when the experiment starts.\nPress "+continue_key_name+" to continue"
+fam_text = TextStim(win, fam_string, color=(1, 1, 1), colorSpace='rgb')
+fam_text.draw()
+win.flip()
+#Wait until subject has pressed enter or escape
+#kb = Keyboard()
+fam_timings = []
+fam_responses = []
+response = event.waitKeys(keyList=continue_keys+['escape'], clearEvents=True)
+if response[-1] in continue_keys: 
+    fix_text = TextStim(win, "+", color=(1, 1, 1), colorSpace='rgb')
+    fix_text.draw()
+    win.flip()
+if 'escape' in response:
+    controlled_e()
+    
+last_stim=''
+fix_text = TextStim(win, "+", color=(1, 1, 1), colorSpace='rgb')
+fix_text.draw()
+win.flip()
+for fam_itr in range(nbrOfFamiliarizations):
+    tmp_sound_files = [x for x in sound_files if x!=last_stim]
+    tmp_sound_name=random.choices(tmp_sound_files)[0]
+    last_stim=tmp_sound_name
+    tmp_sound = Sound(os.path.join(audstim_path,tmp_sound_name))
+    tmp_sound.play()
+    response = event.waitKeys(keyList=allowed_keys+['escape'], clearEvents=True)
+    if response[-1] in allowed_keys:
+        fam_timings.append(clock.getTime()-t_wu_start)
+        fam_responses.append(response[-1])
+        #Feedback
+        if sound_paths[response[-1]]==tmp_sound_name: 
+            feedback_text = TextStim(win, "Correct!", color=(1, 1, 1), colorSpace='rgb', pos=(0,-0.3), height=0.2)
+            feedback_text.draw()
+            win.flip()
+        else:
+            feedback_text = TextStim(win, "Not correct!", color=(1, 1, 1), colorSpace='rgb', pos=(0,-0.3), height=0.2)
+            feedback_text.draw()
+            win.flip()
+        core.wait(trial_pause)
+        continue
+    elif response[-1]=='escape':
+        controlled_e()
+    
+#%%Ready to start screen. Remind that there will be no feedback.
+ready_string = "Great job!\nWe will remove the text once you get going.\nAre you ready to start the experiment?\nPress "+continue_key_name+" to continue"
 ready_text = TextStim(win, ready_string, color=(1, 1, 1), colorSpace='rgb')
 ready_text.draw()
 win.flip()
@@ -211,34 +340,56 @@ for block_itr in range(nbrOfBlocks):
         block_trials = gstim.getFixed8020Block(lengthOfSequences,sequencesPerBlock,cedrus_RB840,nbrOfStartKeys,grammar_version)
     else:
         block_trials = gstim.getGrammarSequences(lengthOfSequences,sequencesPerBlock,\
-                                                 grammar_type,True,savefolder,block_itr+1,subj,cedrus_RB840,nbrOfStartKeys,grammar_version)
+                                                  grammar_type,True,savefolder,block_itr+1,subj,cedrus_RB840,nbrOfStartKeys,grammar_version)
     
     # Initialize data save structures.
     block_RT = np.zeros(len(block_trials))
     block_response = []
     block_feedbackGiven = [] #Saves 1 if the subject was too slow or inaccurate.
     block_accuracy = np.zeros(len(block_trials)) #To keep track of accuracy in the experiment.
+    block_guide_visible = np.zeros(len(block_trials))
+    running_average_accuracy = 0 #Running average accuracy to see if the guide is needed.
+    nbrOfPeeks = nbrOfGuidePeek+1 #To not enable peeks from the start.
     
+    if block_itr == 0:
+        mappings_image_stim.draw()
+        win.flip()
+        show_guide=True
 
 #%%Run experiment block.
     acc_check_skips = 0
     for trial_itr in range(len(block_trials)):
+        
+        if block_itr==0 and trial_itr > nbrOfGuidedTrials:
+            pause_text = TextStim(win, "+", color=(1, 1, 1), colorSpace='rgb')
+            pause_text.draw()
+            win.flip()
+            show_guide=False
+        
+        if nbrOfPeeks > nbrOfGuidePeek:
+            pause_text = TextStim(win, "+", color=(1, 1, 1), colorSpace='rgb')
+            pause_text.draw()
+            win.flip()
+            show_guide=False
+        
+        if show_guide:
+            mappings_image_stim.draw()
+            win.flip()
+            
         trial = block_trials[trial_itr]
         #Present correct stimulus + measure t_trial_init
         if trial == 'pause':
-            trial_stim = SimpleImageStim(win, image='00.jpg')
-            trial_stim.draw()
-            win.flip()
             block_RT[trial_itr] = np.nan
             block_response.append(np.nan)
             block_accuracy[trial_itr] = np.nan
             core.wait(pause_trial_length)
+            #Could be rewritten to apply a help image.
             if trial_itr >= 29:
                 msg_text = ""
                 acc_check = block_accuracy[trial_itr-20:trial_itr]
                 acc_check = acc_check[~np.isnan(acc_check)]
-                if np.nanmean(block_RT[trial_itr-10:trial_itr]) >= 0.8:
-                    msg_text = msg_text+"Too slow, please speed up.\n"
+                #if np.nanmean(block_RT[trial_itr-10:trial_itr]) >= 0.8:
+                #    msg_text = msg_text+"Too slow, please speed up.\n"
                 if sum(acc_check)/len(acc_check) < 0.7 and acc_check_skips==0:
                     msg_text = msg_text+"Too many inaccuracies. Please pay attention.\n"
                     acc_check_skips=20
@@ -248,11 +399,15 @@ for block_itr in range(nbrOfBlocks):
                     feedback_text.draw()
                     win.flip()
                     core.wait(1.5)
+                    instr_image_stim.draw()
+                    win.flip()
         else:
             t_init = clock.getTime()
-            trial_stim = SimpleImageStim(win, image=img_paths[trial])
-            trial_stim.draw()
-            win.flip()
+            #Trial is the name of a keyboard key.
+            tmp_sound_name=random.choices(tmp_sound_files)[0]
+            last_stim=tmp_sound_name
+            tmp_sound = Sound(os.path.join(audstim_path,sound_paths[trial]))
+            tmp_sound.play()
             #Collect response from the keyboard.
             stop = False
             while not stop:
@@ -267,20 +422,27 @@ for block_itr in range(nbrOfBlocks):
                     block_RT[trial_itr] = clock.getTime()-t_init
                     block_response.append(response[-1])
                     block_accuracy[trial_itr] = int(trial==response[-1])
+                    block_guide_visible[trial_itr] = int(show_guide)
+                    running_average_accuracy = int(trial==response[-1])/trials_in_accuracy_average
                     stop=True
                 elif len(response)>0 and response[-1]=='escape':
                     controlled_e()
+                core.wait(trial_pause)
     
-            #After 30 trials, check that accuracy is above 95% and that average reaction time is below 450 ms. 
+            
             if acc_check_skips > 0:
                 acc_check_skips = acc_check_skips - 1
-                    
+                
+            if running_average_accuracy < guide_accuracy_threshold and trial_itr>trials_in_accuracy_average:
+                nbrOfPeeks = 0
+                show_guide = True
                 
     #Save block data and save to csv-file.
     block_save = pd.DataFrame({'trial':block_trials,
-                               'reaction_time':block_RT,
-                               'response':block_response,
-                               'accuracy':block_accuracy}
+                                'reaction_time':block_RT,
+                                'response':block_response,
+                                'accuracy':block_accuracy,
+                                'guide_shown':block_guide_visible}
         )
     block_save.to_csv(os.path.join(savefolder,subj+'_block_'+str(block_itr+1)+'.csv')) #Maybe save as pickle instead.
     #Take a break
@@ -293,27 +455,29 @@ for block_itr in range(nbrOfBlocks):
 
             response = event.waitKeys(keyList=continue_keys+['escape'], clearEvents=True)
             if response[-1] in continue_keys: 
-                pause_text = TextStim(win, "Wait", color=(1, 1, 1), colorSpace='rgb')
+                pause_text = TextStim(win, "+", color=(1, 1, 1), colorSpace='rgb')
                 pause_text.draw()
                 win.flip()
             if 'escape' in response:
                 controlled_e()
         else:
-            pause_text="Great job! Take a "+str(pause_block_length)+" second break.\n"
             start = clock.getTime()
             for pause_itr in range(pause_block_length):
-                pause_stim = SimpleImageStim(win, image='00.jpg')
-                pause_stim.draw()
+                pause_text=TextStim(win, "Great job! Take a "+str(pause_block_length)+" second break.\n", color=(1, 1, 1), colorSpace='rgb')
+                pause_text.draw()
                 win.flip()
                 core.wait(1)
+            pause_text = TextStim(win, "+", color=(1, 1, 1), colorSpace='rgb')
+            pause_text.draw()
+            win.flip()
             print(clock.getTime()-start)
 
 #%% Save the quarantine presses
 quarantine_presses = pd.DataFrame({'response':quarantine_presses_key,
-                                   'reaction_time':quarantine_presses_RT,
-                                   'trial':quarantine_presses_correct,
-                                   'block':quarantine_presses_block,
-                                   'trialNbr':quarantine_presses_trial}
+                                    'reaction_time':quarantine_presses_RT,
+                                    'trial':quarantine_presses_correct,
+                                    'block':quarantine_presses_block,
+                                    'trialNbr':quarantine_presses_trial}
                                   )
 quarantine_presses.to_csv(os.path.join(savefolder,subj+'_quarantine_presses.csv'))
 
