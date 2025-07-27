@@ -11,13 +11,13 @@ import os
 from psychopy import gui
 from psychopy.visual import Window, TextStim, ImageStim, SimpleImageStim
 from psychopy import event, core, monitors, prefs
-prefs.general['audioLib'] = ['pygame']
+from psychopy.sound import Sound
+prefs.general['audioLib'] = ['PTB']
 import numpy as np
 import Grammar_stimuli as gstim
 from datetime import date
 import pandas as pd
 import random
-from numpy import nan
 
 #%% Get subject dialog box
 def subject_dialog(title_text):
@@ -66,34 +66,37 @@ def make_savefolder(save_path, subj):
 
 
 #%% Define the hardware
-cedrus_RB840 = True #to use Cedrus or keyboard. (affects which buttons to use.)
+cedrus_RB840 = False #Whether to use Cedrus or keyboard. (affects which buttons to use.)
 mon = monitors.Monitor('SonyG55')
-mon.setSizePix((1920,1080))
-winsize=(1920,1080)
+mon.setSizePix((2560,1600))
+winsize=(1080,720)
 
+sound_files = ["fi.wav", "pu.wav", "le.wav", "ka.wav", "ty.wav", "jo.wav"]
+
+#Define the sound-key mappings here. 
 if cedrus_RB840:
     allowed_keys = ['a', 'b', 'c', 'f', 'g', 'h']
     continue_keys = ['d', 'e']
     continue_key_name = "one of the bottom keys"
-    img_paths = {
-        "a": "01.jpg",
-        "b": "02.jpg",
-        "c": "03.jpg",
-        "f": "04.jpg",
-        "g": "05.jpg",
-        "h": "06.jpg"
+    sound_paths = {
+        "a": sound_files[0],
+        "b": sound_files[1],
+        "c": sound_files[2],
+        "f": sound_files[3],
+        "g": sound_files[4],
+        "h": sound_files[5]
         }
 else:
     allowed_keys = ['s', 'd', 'f', 'j', 'k', 'l']
     continue_keys = ['space']
     continue_key_name = "space bar"
-    img_paths = {
-        "s": "01.jpg",
-        "d": "02.jpg",
-        "f": "03.jpg",
-        "j": "04.jpg",
-        "k": "05.jpg",
-        "l": "06.jpg"
+    sound_paths = {
+        "s": sound_files[0],
+        "d": sound_files[1],
+        "f": sound_files[2],
+        "j": sound_files[3],
+        "k": sound_files[4],
+        "l": sound_files[5]
         }
 
 #%% Define the paradigm.  
@@ -104,6 +107,7 @@ nbrOfStartKeys = 2 #Can be 2 or 1 and alternates between [L3] and [L3,R1].
 pause_block_length = 3 #Pause between blocks length in seconds. 
 pause_trial_length = 0.5 #Pause length for pause trials in seconds.
 post_test_versions = ['grammatical', 'random']
+trial_pause = 0.05 #Pause between trials to make the mapping more clear.
 
 #%% Define grammar!
 grammar_type = '8020' #'8020', '8020', '5050', or 'random'
@@ -111,7 +115,8 @@ grammar_version = 'a' #'a' or 'b'
      
 
 #%% Define save path
-save_path = 'C:\\Users\\isaki\\Documents\\Skole\\Bachelor\\Grammar_SRTT-main' 
+save_path = '/Users/gdf724/Data/LMapRMax/Piloting' 
+audstim_path = '/Users/gdf724/Code/LMapRMax_paradigm/AudioStimuli/250ms'
 
 #%% Gather subject information and make sure that the subject name is set and make a save folder.
 loop_subjDial=True
@@ -187,27 +192,32 @@ for block_itr in range(nbrOfBlocks*len(post_test_versions)):
     block_feedbackGiven = [] #Saves 1 if the subject was too slow or inaccurate.
     block_accuracy = np.zeros(len(block_trials)) #To keep track of accuracy in the experiment.
     block_seq_type = []
-
+    
 #%%Run experiment block.
     acc_check_skips = 0
+    
+    fix_text = TextStim(win, "+", color=(1, 1, 1), colorSpace='rgb')
+    fix_text.draw()
+    win.flip()
+    
     for trial_itr in range(len(block_trials)):
+        
+        
         trial = block_trials[trial_itr]
         #Present correct stimulus + measure t_trial_init
         if trial == 'pause':
-            trial_stim = SimpleImageStim(win, image='00.jpg')
-            trial_stim.draw()
-            win.flip()
             block_RT[trial_itr] = np.nan
             block_response.append(np.nan)
             block_accuracy[trial_itr] = np.nan
-            block_seq_type.append(nan)
+            block_seq_type.append(np.nan)
             core.wait(pause_trial_length)
+            #Could be rewritten to apply a help image.
             if trial_itr >= 29:
                 msg_text = ""
                 acc_check = block_accuracy[trial_itr-20:trial_itr]
                 acc_check = acc_check[~np.isnan(acc_check)]
-                if np.nanmean(block_RT[trial_itr-10:trial_itr]) >= 0.8:
-                    msg_text = msg_text+"Too slow, please speed up.\n"
+                #if np.nanmean(block_RT[trial_itr-10:trial_itr]) >= 0.8:
+                #    msg_text = msg_text+"Too slow, please speed up.\n"
                 if sum(acc_check)/len(acc_check) < 0.7 and acc_check_skips==0:
                     msg_text = msg_text+"Too many inaccuracies. Please pay attention.\n"
                     acc_check_skips=20
@@ -217,11 +227,13 @@ for block_itr in range(nbrOfBlocks*len(post_test_versions)):
                     feedback_text.draw()
                     win.flip()
                     core.wait(1.5)
+                    instr_image_stim.draw()
+                    win.flip()
         else:
             t_init = clock.getTime()
-            trial_stim = SimpleImageStim(win, image=img_paths[trial])
-            trial_stim.draw()
-            win.flip()
+            #Trial is the name of a keyboard key.
+            tmp_sound = Sound(os.path.join(audstim_path,sound_paths[trial]))
+            tmp_sound.play()
             #Collect response from the keyboard.
             stop = False
             while not stop:
@@ -240,11 +252,12 @@ for block_itr in range(nbrOfBlocks*len(post_test_versions)):
                     stop=True
                 elif len(response)>0 and response[-1]=='escape':
                     controlled_e()
+                core.wait(trial_pause)
     
-            #After 30 trials, check that accuracy is above 95% and that average reaction time is below 450 ms. 
+            
             if acc_check_skips > 0:
                 acc_check_skips = acc_check_skips - 1
-                    
+                
                 
     #Save block data and save to csv-file.
     block_save = pd.DataFrame({'trial':block_trials,
@@ -262,7 +275,6 @@ for block_itr in range(nbrOfBlocks*len(post_test_versions)):
             pause_stim.draw()
             win.flip()
             core.wait(1)
-
 
 
 #%% Thank the participant and quit the program

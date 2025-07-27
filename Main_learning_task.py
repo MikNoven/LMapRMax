@@ -404,8 +404,6 @@ for block_itr in range(nbrOfBlocks):
         else:
             t_init = clock.getTime()
             #Trial is the name of a keyboard key.
-            tmp_sound_name=random.choices(tmp_sound_files)[0]
-            last_stim=tmp_sound_name
             tmp_sound = Sound(os.path.join(audstim_path,sound_paths[trial]))
             tmp_sound.play()
             #Collect response from the keyboard.
