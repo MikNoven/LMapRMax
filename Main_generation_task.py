@@ -8,9 +8,10 @@ Separate generation task.
 #%% Import necessary packages.
 import os
 from psychopy import gui
-from psychopy.visual import Window, TextStim, ImageStim, SimpleImageStim
+from psychopy.visual import Window, TextStim, SimpleImageStim
 from psychopy import event, core, monitors, prefs
-prefs.general['audioLib'] = ['pygame']
+from psychopy.sound import Sound
+prefs.general['audioLib'] = ['PTB']
 import numpy as np
 import Grammar_stimuli as gstim
 from datetime import date
@@ -65,33 +66,37 @@ def make_savefolder(save_path, subj):
 #%% Define the hardware
 cedrus_RB840 = False #Whether to use Cedrus or keyboard. (affects which buttons to use.)
 mon = monitors.Monitor('SonyG55')
-mon.setSizePix((1920,1080))
-winsize=(1920,1080)
+mon.setSizePix((2560,1600))
+winsize=(1080,720)
 
+sound_files = ["fi.wav", "pu.wav", "le.wav", "ka.wav", "ty.wav", "jo.wav"]
+
+#Define the sound-key mappings here. 
 if cedrus_RB840:
     allowed_keys = ['a', 'b', 'c', 'f', 'g', 'h']
     continue_keys = ['d', 'e']
     continue_key_name = "one of the bottom keys"
-    img_paths = {
-        "a": "01.jpg",
-        "b": "02.jpg",
-        "c": "03.jpg",
-        "f": "04.jpg",
-        "g": "05.jpg",
-        "h": "06.jpg"
+    sound_paths = {
+        "a": sound_files[0],
+        "b": sound_files[1],
+        "c": sound_files[2],
+        "f": sound_files[3],
+        "g": sound_files[4],
+        "h": sound_files[5]
         }
 else:
     allowed_keys = ['s', 'd', 'f', 'j', 'k', 'l']
     continue_keys = ['space']
     continue_key_name = "space bar"
-    img_paths = {
-        "s": "01.jpg",
-        "d": "02.jpg",
-        "f": "03.jpg",
-        "j": "04.jpg",
-        "k": "05.jpg",
-        "l": "06.jpg"
+    sound_paths = {
+        "s": sound_files[0],
+        "d": sound_files[1],
+        "f": sound_files[2],
+        "j": sound_files[3],
+        "k": sound_files[4],
+        "l": sound_files[5]
         }
+
 
 #%% Define the paradigm.  
 grammar_type = '5050' #'8020', '5050', or 'random'
@@ -101,11 +106,12 @@ nbrOfStartKeys = 2 #Can be 2 or 1 and alternates between [L3] and [L3,R1].
 lengthOfSequences = 8 #Number of presses per sequence.
 pregeneratedGenerationTask = 3 #How many of the elements should be pre-generated in the generation task. 0 for completely free generation.
 grammaticalPregenerated_randomGenTask = True #False if starting sequence should be random
-nbrOfGeneratedSequences = 4
+nbrOfGeneratedSequences = 8
 
 
-#%% Define save path
-save_path = 'C:\\Users\\isaki\\Documents\\Skole\\Bachelor\\Grammar_SRTT-main' 
+#%% Define paths
+save_path = '/Users/gdf724/Data/LMapRMax/Piloting' 
+audstim_path = '/Users/gdf724/Code/LMapRMax_paradigm/AudioStimuli/250ms'
 
 #%% Gather subject information and make sure that the subject name is set and make a save folder.
 loop_subjDial=True
@@ -171,9 +177,6 @@ if pregeneratedGenerationTask == 0 or grammar_type == 'random':
         gen_seq_text_stim.draw()
         win.flip()
         core.wait(1)
-        genStim = SimpleImageStim(win, image='00.jpg')
-        genStim.draw()
-        win.flip()
         for seq_itr in range(lengthOfSequences):
             t_init = clock.getTime()
             response = event.waitKeys(keyList=allowed_keys+['escape'], clearEvents = True)
@@ -182,9 +185,8 @@ if pregeneratedGenerationTask == 0 or grammar_type == 'random':
                 gen_response.append(response[-1])
                 gen_seq[seq_itr+lengthOfSequences*gen_itr] = gen_itr+1
                 
-                genStim = SimpleImageStim(win, image=img_paths[response[-1]])
-                genStim.draw()
-                win.flip()
+                tmp_sound = Sound(os.path.join(audstim_path,sound_paths[response[-1]]))
+                tmp_sound.play()
             elif response[-1]=='escape':
                 controlled_e()
 else:
@@ -196,9 +198,8 @@ else:
         core.wait(0.5)
         pregen_seq = gstim.getPreGeneratedSequences(pregeneratedGenerationTask,'5050',cedrus_RB840,nbrOfStartKeys,grammar_version)
         for pregen_itr in range(pregeneratedGenerationTask):
-            genStim = SimpleImageStim(win, image=img_paths[pregen_seq[pregen_itr]])
-            genStim.draw()
-            win.flip()
+            tmp_sound = Sound(os.path.join(audstim_path,sound_paths[pregen_seq[pregen_itr]]))
+            tmp_sound.play()
             t_init = clock.getTime()
             response = event.waitKeys(keyList=allowed_keys+['escape'], clearEvents = True)
             if response[-1] in allowed_keys:
@@ -208,9 +209,6 @@ else:
                 gen_pregenerated[pregen_itr+lengthOfSequences*gen_itr] = 1
             elif response[-1]=='escape':
                 controlled_e()
-        genStim = SimpleImageStim(win, image='00.jpg')
-        genStim.draw()
-        win.flip()
         for seq_itr in range(lengthOfSequences-pregeneratedGenerationTask):
             t_init = clock.getTime()
             response = event.waitKeys(keyList=allowed_keys+['escape'], clearEvents = True)
@@ -218,11 +216,21 @@ else:
                 gen_time[pregen_itr+seq_itr+1+lengthOfSequences*gen_itr] = clock.getTime()-t_init
                 gen_response.append(response[-1])
                 gen_seq[pregen_itr+seq_itr+1+lengthOfSequences*gen_itr] = gen_itr+1
-                genStim = SimpleImageStim(win, image=img_paths[response[-1]])
-                genStim.draw()
-                win.flip()
+                tmp_sound = Sound(os.path.join(audstim_path,sound_paths[response[-1]]))
+                tmp_sound.play()
             elif response[-1]=='escape':
                 controlled_e()
+        if gen_itr < nbrOfGeneratedSequences-1:
+            gentest_seq_text = "Great!\nPress space when you're ready for the next one."
+            gentest_seq_stim = TextStim(win, gentest_seq_text, color=(1, 1, 1), colorSpace='rgb')
+            gentest_seq_stim.draw()
+            win.flip()
+            response = event.waitKeys(keyList=continue_keys+['escape'], clearEvents = True)
+            if response[-1] in continue_keys:
+                print('Generation task grammatical sequence '+str(gen_itr))
+            elif response[-1]=='escape':
+                controlled_e()
+
                 
 #Save the information. 
 gen_gram_save = pd.DataFrame({'sequence':gen_seq,
@@ -261,9 +269,6 @@ if pregeneratedGenerationTask == 0 or grammar_type == 'random':
         gen_seq_text_stim.draw()
         win.flip()
         core.wait(1)
-        genStim = SimpleImageStim(win, image='00.jpg')
-        genStim.draw()
-        win.flip()
         for seq_itr in range(lengthOfSequences):
             
             t_init = clock.getTime()
@@ -273,9 +278,8 @@ if pregeneratedGenerationTask == 0 or grammar_type == 'random':
                 gen_response.append(response[-1])
                 gen_seq[seq_itr+lengthOfSequences*gen_itr] = gen_itr+1
                 
-                genStim = SimpleImageStim(win, image=img_paths[response[-1]])
-                genStim.draw()
-                win.flip()
+                tmp_sound = Sound(os.path.join(audstim_path,sound_paths[response[-1]]))
+                tmp_sound.play()
             elif response[-1]=='escape':
                 controlled_e()
 else:
@@ -292,9 +296,8 @@ else:
             pregen_seq = gstim.getPreGeneratedSequences(pregeneratedGenerationTask,'random',cedrus_RB840,nbrOfStartKeys,grammar_version)
             
         for pregen_itr in range(pregeneratedGenerationTask):
-            genStim = SimpleImageStim(win, image=img_paths[pregen_seq[pregen_itr]])
-            genStim.draw()
-            win.flip()
+            tmp_sound = Sound(os.path.join(audstim_path,sound_paths[pregen_seq[pregen_itr]]))
+            tmp_sound.play()
             t_init = clock.getTime()
             response = event.waitKeys(keyList=allowed_keys+['escape'], clearEvents = True)
             if response[-1] in allowed_keys:
@@ -304,9 +307,7 @@ else:
                 gen_pregenerated[pregen_itr+lengthOfSequences*gen_itr] = 1
             elif response[-1]=='escape':
                 controlled_e()
-        genStim = SimpleImageStim(win, image='00.jpg')
-        genStim.draw()
-        win.flip()
+
         for seq_itr in range(lengthOfSequences-pregeneratedGenerationTask):
             t_init = clock.getTime()
             response = event.waitKeys(keyList=allowed_keys+['escape'], clearEvents = True)
@@ -314,9 +315,19 @@ else:
                 gen_time[pregen_itr+seq_itr+1+lengthOfSequences*gen_itr] = clock.getTime()-t_init
                 gen_response.append(response[-1])
                 gen_seq[pregen_itr+seq_itr+1+lengthOfSequences*gen_itr] = gen_itr+1
-                genStim = SimpleImageStim(win, image=img_paths[response[-1]])
-                genStim.draw()
-                win.flip()
+                tmp_sound = Sound(os.path.join(audstim_path,sound_paths[response[-1]]))
+                tmp_sound.play()
+            elif response[-1]=='escape':
+                controlled_e()
+                
+        if gen_itr < nbrOfGeneratedSequences-1:
+            gentest_seq_text = "Great!\nPress space when you're ready for the next one."
+            gentest_seq_stim = TextStim(win, gentest_seq_text, color=(1, 1, 1), colorSpace='rgb')
+            gentest_seq_stim.draw()
+            win.flip()
+            response = event.waitKeys(keyList=continue_keys+['escape'], clearEvents = True)
+            if response[-1] in continue_keys:
+                print('Generation task grammatical sequence '+str(gen_itr))
             elif response[-1]=='escape':
                 controlled_e()
                 

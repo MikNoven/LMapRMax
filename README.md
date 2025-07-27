@@ -5,7 +5,7 @@ The task consists of a learning SRTT, two subsequent generation tasks (key press
 # Learning SRTT
 The learning SRTT consists of a familiarization stage to teach subjects the phoneme-key bindings. Throughout the task, if accuracy falls below 80 % at any point, the figure of the phoneme-key bindings comes onto the screen. The information of the visibility of phoneme-key bindings are saved. 
 Preliminary learning SRTT structure: 2 sessions of 15 blocks of 5 sequences of 8 elements.
-Phonemes are in the AudioStimuli folder. 32 bit .wav files sample rate 48 kHz. Recorded in Macbook Air builtin microphone. 
+Phonemes are in the AudioStimuli folder. 32 bit .wav files sample rate 96 kHz. Recorded in Macbook Air builtin microphone. 
 
 # Generation task motor
 Three phonemes are given and responded to with correct key presses from the subject, then the subject presses keys and told to keep to the system from which the sequences were drawn (inclusion) or not (exclusion).
