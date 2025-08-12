@@ -65,7 +65,7 @@ def make_savefolder(save_path, subj):
     return savefolder
 
 #%% Define the hardware
-cedrus_RB840 = False #Whether to use Cedrus or keyboard. (affects which buttons to use.)
+cedrus_RB840 = True #Whether to use Cedrus or keyboard. (affects which buttons to use.)
 mon = monitors.Monitor('SonyG55')
 mon.setSizePix((2560,1600))
 winsize=(1080,720)
@@ -101,15 +101,15 @@ else:
 #%% Define the paradigm. 
 #SRTT
 nbrOfFamiliarizations = 28 #Number of stimuli in the familiarization step
-nbrOfGuidedTrials = 16 #Number of trials the guide stays on at the start of the trial.
+nbrOfGuidedTrials = 5 #Number of trials the guide stays on at the start of the trial.
 trials_in_accuracy_average = 10 #Number of trials that go into the running average accuracy. 
 guide_accuracy_threshold = 0.7 #Average accuracy 
-nbrOfGuidePeek = 5 #Number of trials that the guide stays on. 
+nbrOfGuidePeek = 2 #Number of trials that the guide stays on. 
 
 trial_pause = 0.05 #Pause between trials to make the mapping more clear.
-nbrOfBlocks = 3 
+nbrOfBlocks = 15 
 lengthOfSequences = 8 #Number of presses per sequence.
-sequencesPerBlock = 2
+sequencesPerBlock = 5
 pause_block_length = 3 #Pause between blocks length in seconds. 
 pause_trial_length = 0.5 #Pause length for pause trials in seconds.
 nbrOfLongBreaks = 1 #Number of longer breaks that are gone through by button press. 
@@ -331,6 +331,8 @@ quarantine_presses_correct = []
 quarantine_presses_block = []
 quarantine_presses_trial = []
 
+running_average_accuracy = 0 #Running average accuracy to see if the guide is needed. Needs to be here because otherwise it's reset to 0 and messes with the data.
+
 for block_itr in range(nbrOfBlocks):
 #%% Initialize the experiment.
     #Get sequences for the block. (Separate class.)
@@ -348,10 +350,9 @@ for block_itr in range(nbrOfBlocks):
     block_feedbackGiven = [] #Saves 1 if the subject was too slow or inaccurate.
     block_accuracy = np.zeros(len(block_trials)) #To keep track of accuracy in the experiment.
     block_guide_visible = np.zeros(len(block_trials))
-    running_average_accuracy = 0 #Running average accuracy to see if the guide is needed.
-    nbrOfPeeks = nbrOfGuidePeek+1 #To not enable peeks from the start.
+    nbrOfPeeks = 0#nbrOfGuidePeek+1 #To not enable peeks from the start.
     
-    if block_itr == 0:
+    if block_itr==0:
         mappings_image_stim.draw()
         win.flip()
         show_guide=True
@@ -360,11 +361,12 @@ for block_itr in range(nbrOfBlocks):
     acc_check_skips = 0
     for trial_itr in range(len(block_trials)):
         
-        if block_itr==0 and trial_itr > nbrOfGuidedTrials:
+        if block_itr==0 and trial_itr > nbrOfGuidePeek:
             pause_text = TextStim(win, "+", color=(1, 1, 1), colorSpace='rgb')
             pause_text.draw()
             win.flip()
             show_guide=False
+            
         
         if nbrOfPeeks > nbrOfGuidePeek:
             pause_text = TextStim(win, "+", color=(1, 1, 1), colorSpace='rgb')
@@ -375,6 +377,7 @@ for block_itr in range(nbrOfBlocks):
         if show_guide:
             mappings_image_stim.draw()
             win.flip()
+            nbrOfPeeks=nbrOfPeeks+1
             
         trial = block_trials[trial_itr]
         #Present correct stimulus + measure t_trial_init
@@ -421,7 +424,7 @@ for block_itr in range(nbrOfBlocks):
                     block_response.append(response[-1])
                     block_accuracy[trial_itr] = int(trial==response[-1])
                     block_guide_visible[trial_itr] = int(show_guide)
-                    running_average_accuracy = int(trial==response[-1])/trials_in_accuracy_average
+                    running_average_accuracy = running_average_accuracy*(1-1/trials_in_accuracy_average)+int(trial==response[-1])/trials_in_accuracy_average
                     stop=True
                 elif len(response)>0 and response[-1]=='escape':
                     controlled_e()

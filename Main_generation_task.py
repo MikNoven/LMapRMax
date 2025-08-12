@@ -64,7 +64,7 @@ def make_savefolder(save_path, subj):
 
 
 #%% Define the hardware
-cedrus_RB840 = False #Whether to use Cedrus or keyboard. (affects which buttons to use.)
+cedrus_RB840 = True #Whether to use Cedrus or keyboard. (affects which buttons to use.)
 mon = monitors.Monitor('SonyG55')
 mon.setSizePix((2560,1600))
 winsize=(1080,720)
