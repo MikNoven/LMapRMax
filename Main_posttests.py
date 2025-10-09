@@ -3,6 +3,8 @@
 """
 Created on Tue Mar 14 21:49:44 2023
 Post tests. 
+2025-10-08:
+    Added reading grammar version from a settings file. 
 @author: gdf724
 """
 
@@ -57,7 +59,7 @@ def controlled_e():
 
 #%% Make a save folder with date stamp
 def make_savefolder(save_path, subj):
-    savefolder = os.path.join(save_path,subj+'_'+date.today().isoformat()+'_post')
+    savefolder = os.path.join(save_path,subj,subj+'_'+date.today().isoformat()+'_post')
     if os.path.exists(savefolder):
         savefolder = "error"
     else:
@@ -109,12 +111,9 @@ pause_trial_length = 0.5 #Pause length for pause trials in seconds.
 post_test_versions = ['grammatical', 'random']
 trial_pause = 0.05 #Pause between trials to make the mapping more clear.
 
-#%% Define grammar!
-grammar_type = '8020' #'8020', '8020', '5050', or 'random'
-grammar_version = 'a' #'a' or 'b'
-     
 
 #%% Define save path
+settings_path = '/Users/gdf724/Data/LMapRMax/Settingsfiles'
 save_path = '/Users/gdf724/Data/LMapRMax/Piloting' 
 audstim_path = '/Users/gdf724/Code/LMapRMax_paradigm/AudioStimuli/250ms'
 
@@ -126,9 +125,16 @@ while loop_subjDial:
     savefolder = make_savefolder(save_path, subj)
     if savefolder == "" or savefolder == "error":
         title_text = "Subject ID already tested today!"
+    elif not os.path.exists(os.path.join(settings_path,subj+'.txt')):
+        title_text= "No settings file specified for Subject ID."
     else:
         loop_subjDial = False
-    
+
+#%% Define grammar!
+grammar_type = '8020' #'8020', '8020', '5050', or 'random'
+settings_file = pd.read_csv(os.path.join(settings_path,subj+'.csv'))
+grammar_version = settings_file["grammar_version"][0]     
+
 #%% Save settings
 with open(os.path.join(savefolder,'settings.txt'),'w') as f:
     f.write('subject:'+str(subj)+'\n')

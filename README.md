@@ -1,6 +1,9 @@
 # LMapRMax
 A Serial Reaction Time Test based on phoneme sequences derived from a finite-state grammar.
-The task consists of a learning SRTT, two subsequent generation tasks (key press and oral), and a posttest SRTT. 
+The task consists of a learning SRTT, two subsequent generation tasks (key press and oral), and a posttest SRTT.
+All subjects are expected to have a settings file detailing which grammar version should be used (a or b). 
+The file should be named "subjectID.csv" with "subjectID" being the same subject identifier as specified in the dialog box at the start of the experiments. 
+The csv file should have a column titled "grammar_version" with either "a" or "b".
 
 # Learning SRTT
 The learning SRTT consists of a familiarization stage to teach subjects the phoneme-key bindings. Throughout the task, if accuracy falls below 80 % at any point, the figure of the phoneme-key bindings comes onto the screen. The information of the visibility of phoneme-key bindings are saved. 

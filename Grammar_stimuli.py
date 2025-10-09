@@ -321,7 +321,10 @@ def generateFixed8020Block(lengthOfSequences,sequencesPerBlock,cedrus_RB840,nbrO
 #%% Get predefined block guaranteed to include 20% transitions
 def getFixed8020Block(lengthOfSequences,sequencesPerBlock,cedrus_RB840,nbrOfStartKeys,grammar_version):
     #Assume that the sequence is saved in the code folder and saved in the following logic.
-    filename='seqlen'+str(lengthOfSequences)+'seqperblock'+str(sequencesPerBlock)+'startkeys'+str(nbrOfStartKeys)+'version'+grammar_version+'.txt'
+    if cedrus_RB840:
+        filename='seqlen'+str(lengthOfSequences)+'seqperblock'+str(sequencesPerBlock)+'startkeys'+str(nbrOfStartKeys)+'version'+grammar_version+'_cedrus.txt'
+    else:
+        filename='seqlen'+str(lengthOfSequences)+'seqperblock'+str(sequencesPerBlock)+'startkeys'+str(nbrOfStartKeys)+'version'+grammar_version+'_keyboard.txt'
     
     if not os.path.exists(filename):
         block_stim = generateFixed8020Block(lengthOfSequences,sequencesPerBlock,cedrus_RB840,nbrOfStartKeys,(4.5,6),grammar_version)

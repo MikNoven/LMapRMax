@@ -3,6 +3,9 @@
 """
 Created on Tue Jun 03 08:35:37 2025
 Main file of the LMapRMax learning experiment.
+2025-10-08: 
+    X Made checks to ensure a distribution of 75-85% 0.8 transitions for each block. 
+    X Included reading grammar version from a configuration file for each subject. 
 @author: gdf724
 """
 
@@ -57,15 +60,29 @@ def controlled_e():
 
 #%% Make a save folder with date stamp
 def make_savefolder(save_path, subj):
-    savefolder = os.path.join(save_path,subj+'_'+date.today().isoformat()+'_learning')
+    savefolder = os.path.join(save_path,subj,subj+'_'+date.today().isoformat()+'_learning')
     if os.path.exists(savefolder):
         savefolder = "error"
     else:
         os.makedirs(savefolder)
     return savefolder
 
+#%% Get relative 0.8 transitions form 8020 grammar
+def get_rel_08(block_stimuli,grammar):
+    trialcounter=0
+    count_08=0
+    for itr in range(1,len(block_stimuli)):
+        if block_stimuli[itr] != 'pause':
+            trialcounter = trialcounter+1
+            if block_stimuli[itr-1] != 'pause':
+                if grammar[block_stimuli[itr]][block_stimuli[itr-1]]==0.8:
+                    count_08=count_08+1
+            
+    
+    return count_08/trialcounter
+
 #%% Define the hardware
-cedrus_RB840 = True #Whether to use Cedrus or keyboard. (affects which buttons to use.)
+cedrus_RB840 = False #Whether to use Cedrus or keyboard. (affects which buttons to use.)
 mon = monitors.Monitor('SonyG55')
 mon.setSizePix((2560,1600))
 winsize=(1080,720)
@@ -98,6 +115,25 @@ else:
         "l": sound_files[5]
         }
 
+#%% Define paths
+settings_path = '/Users/gdf724/Data/LMapRMax/Settingsfiles'
+save_path = '/Users/gdf724/Data/LMapRMax/Piloting' 
+audstim_path = '/Users/gdf724/Code/LMapRMax_paradigm/AudioStimuli/250ms'
+
+
+#%% Gather subject information and make sure that the subject name is set and make a save folder.
+loop_subjDial=True
+title_text = "Write subject ID"
+while loop_subjDial:
+    subj = subject_dialog(title_text)
+    savefolder = make_savefolder(save_path, subj)
+    if savefolder == "" or savefolder == "error":
+        title_text = "Subject ID already tested today!"
+    elif not os.path.exists(os.path.join(settings_path,subj+'.csv')):
+        title_text= "No settings file specified for Subject ID."
+    else:
+        loop_subjDial = False
+    
 #%% Define the paradigm. 
 #SRTT
 nbrOfFamiliarizations = 28 #Number of stimuli in the familiarization step
@@ -114,26 +150,12 @@ pause_block_length = 3 #Pause between blocks length in seconds.
 pause_trial_length = 0.5 #Pause length for pause trials in seconds.
 nbrOfLongBreaks = 1 #Number of longer breaks that are gone through by button press. 
 grammar_type = '8020' #'8020', '5050', or 'random'
-grammar_version = 'a'
+settings_file = pd.read_csv(os.path.join(settings_path,subj+'.csv'))
+grammar_version = settings_file["grammar_version"][0]
 nbrOfStartKeys = 2 #Can be 2 or 1 and alternates between [L3] and [L3,R1].
 begin_with_set_sequences = True
+grammar=gstim.getGrammar(grammar_type, cedrus_RB840, grammar_version)
 
-
-#%% Define paths
-save_path = '/Users/gdf724/Data/LMapRMax/Piloting' 
-audstim_path = '/Users/gdf724/Code/LMapRMax_paradigm/AudioStimuli/250ms'
-
-#%% Gather subject information and make sure that the subject name is set and make a save folder.
-loop_subjDial=True
-title_text = "Write subject ID"
-while loop_subjDial:
-    subj = subject_dialog(title_text)
-    savefolder = make_savefolder(save_path, subj)
-    if savefolder == "" or savefolder == "error":
-        title_text = "Subject ID already tested today!"
-    else:
-        loop_subjDial = False
-    
 #%% Save settings
 with open(os.path.join(savefolder,'settings.txt'),'w') as f:
     f.write('subject:'+str(subj)+'\n')
@@ -146,13 +168,14 @@ with open(os.path.join(savefolder,'settings.txt'),'w') as f:
     f.write('pause_trial_length:'+str(pause_trial_length)+'\n')
     f.write('nbrOfLongBreaks:'+str(nbrOfLongBreaks)+'\n')
     f.write('grammar_type:'+str(grammar_type)+'\n')
+    f.write('grammar_version:'+str(grammar_version)+'\n')
     f.write('nbrOfStartKeys:'+str(nbrOfStartKeys)+'\n')
     f.write('begin_with_set_sequences:'+str(begin_with_set_sequences)+'\n')
-    f.write('nbrOfFamiliarizations'+str(nbrOfFamiliarizations)+'\n')
-    f.write('nbrOfGuidedTrials'+str(nbrOfGuidedTrials)+'\n')
-    f.write('trials_in_accuracy_average'+str(trials_in_accuracy_average)+'\n')    
-    f.write('guide_accuracy_threshold'+str(guide_accuracy_threshold)+'\n')
-    f.write('nbrOfGuidePeek'+str(nbrOfGuidePeek)+'\n')
+    f.write('nbrOfFamiliarizations:'+str(nbrOfFamiliarizations)+'\n')
+    f.write('nbrOfGuidedTrials:'+str(nbrOfGuidedTrials)+'\n')
+    f.write('trials_in_accuracy_average:'+str(trials_in_accuracy_average)+'\n')    
+    f.write('guide_accuracy_threshold:'+str(guide_accuracy_threshold)+'\n')
+    f.write('nbrOfGuidePeek:'+str(nbrOfGuidePeek)+'\n')
 
 
 #%% Initialize Window and make welcome screen.
@@ -341,8 +364,13 @@ for block_itr in range(nbrOfBlocks):
     elif grammar_type == '8020' and begin_with_set_sequences:
         block_trials = gstim.getFixed8020Block(lengthOfSequences,sequencesPerBlock,cedrus_RB840,nbrOfStartKeys,grammar_version)
     else:
-        block_trials = gstim.getGrammarSequences(lengthOfSequences,sequencesPerBlock,\
+        gen_block=True
+        while gen_block:
+            block_trials = gstim.getGrammarSequences(lengthOfSequences,sequencesPerBlock,\
                                                   grammar_type,True,savefolder,block_itr+1,subj,cedrus_RB840,nbrOfStartKeys,grammar_version)
+            rel_08 = get_rel_08(block_trials,grammar)
+            if rel_08<0.85 and rel_08>0.75:
+                gen_block=False
     
     # Initialize data save structures.
     block_RT = np.zeros(len(block_trials))

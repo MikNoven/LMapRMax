@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jun 14 08:27:28 2023
-
+Created on Thu Aug 14 09:53:35 2025
+Script for collecting data from pilot LMapRMax.
+Will later be adopted for collecting data for real project.
 @author: gdf724
-
-Script for data collection and structuring. 
-
 """
 
 #%% Import necessary libraries
@@ -75,22 +73,18 @@ def getTransProb(group,cuelist,grammar_version):
             transprob.append(grammar[cuelist[itr]][cuelist[itr-1]])
             
     return transprob
-        
-            
-            
+
 #%% Define variables
-datapath = '/Users/gdf724/Data/MovementGrammar/PreReg_AGIL/'
-output_path = '/Users/gdf724/Data/MovementGrammar/PreReg_AGIL/'
+datapath = '/Users/gdf724/Data/LMapRMax/Piloting'
+output_path = '/Users/gdf724/Data/LMapRMax/Piloting/Postproc'
 
 subjlist = glob(os.path.join(datapath,'*'))
-#subjlist = sortDynamic([x for x in subjlist if len(x)>4 and x[-4]!='.' and   x[-4]!='x'])
+subjlist.remove(output_path)
 
-#This could potentially also be read from the settings text file. 
-nbrOfDays = 3
+nbrOfDays = 2
 nbrOfBlocks = 15
 nbrOfSequences = 5 
 nbrOfItems = 8
-
 
 #%% SRTT
 # Output: csv-file with subject, day, block, sequence_nbr, element_nbr, cue, RT, response, accuracy, handshift and potentially background measures.
@@ -123,6 +117,7 @@ RTcol = []
 responsecol = []
 accuracycol = []
 handshiftcol = []
+guideshowncol = []
 
 for subject in subjlist:
     subj = os.path.basename(subject)
@@ -131,8 +126,8 @@ for subject in subjlist:
     for day_itr in range(len(learning_list)):
         block_list = sortDynamic(glob(os.path.join(learning_list[day_itr],'*_block_*.csv')))
         tmp = pd.read_table(os.path.join(learning_list[day_itr],'settings.txt'),sep=':')
-        group = tmp.iloc[7,1]
-        grammar_version = tmp.iloc[8,1]
+        group = tmp.iloc[8,1]
+        grammar_version = tmp.iloc[9,1]
 
         for block_itr in range(len(block_list)):
             block_data = pd.read_csv(os.path.join(block_list[block_itr]))
@@ -152,6 +147,7 @@ for subject in subjlist:
             RTcol.extend(block_data['reaction_time'].tolist())
             responsecol.extend(block_data['response'].tolist())
             accuracycol.extend(block_data['accuracy'].tolist())
+            guideshowncol.extend(block_data['guide_shown'].tolist())
             
 savedf = pd.DataFrame({'subject': subjcol,
                        'group': groupcol,
@@ -166,13 +162,14 @@ savedf = pd.DataFrame({'subject': subjcol,
                        'RT': RTcol,
                        'response': responsecol,
                        'accuracy': accuracycol,
-                       'handshift': handshiftcol})
+                       'handshift': handshiftcol,
+                       'guide_shown': guideshowncol})
 savedf.to_csv(os.path.join(output_path,'LearningSRTT_data.csv'), index=False)
         
 #%% Sequence production
 element_nbr_template = []
 
-for seqitr in range(4):
+for seqitr in range(8):
     for ittr in range(nbrOfItems):
         element_nbr_template.append(ittr+1)
 
@@ -198,10 +195,7 @@ for subject in subjlist:
         tmp = pd.read_table(os.path.join(os.path.dirname(production_list[0]),'settings.txt'),sep=':')
         group = tmp.iloc[2,1]
         grver_tmp = pd.read_table(os.path.join(sorted(glob(os.path.join(subject,subj+'*_learning')))[0],'settings.txt'),sep=':')
-        grammar_version = grver_tmp.iloc[8,1]
-        grammar = gramstim.getGrammar(group, True, grammar_version)
-        hilo_grammar = gramstim.getGrammar('8020', True, grammar_version)
-        eq_grammar = gramstim.getGrammar('5050', True, grammar_version)
+        grammar = gramstim.getGrammar('8020', True, grammar_version)
         for prod_itr in range(len(production_list)):
             if production_list[prod_itr][-5] == 'l':
                 gr = 'grammatical'
@@ -218,8 +212,6 @@ for subject in subjlist:
             responsecol.extend(tmp_data['response'].tolist())
             fixed.extend(tmp_data['pregenerated'].tolist())
             grammatical.extend(getGrammarScores(tmp_data['response'].tolist(),tmp_data['sequence'].tolist(),grammar,gr))
-            hilo_grammatical.extend(getGrammarScores(tmp_data['response'].tolist(),tmp_data['sequence'].tolist(),hilo_grammar,gr))
-            eq_grammatical.extend(getGrammarScores(tmp_data['response'].tolist(),tmp_data['sequence'].tolist(),eq_grammar,gr))
             bin_grammatical.extend([1 if x>0 and not np.isnan(x) else 0 for x in getGrammarScores(tmp_data['response'].tolist(),tmp_data['sequence'].tolist(),grammar,gr)])
 savedf = pd.DataFrame({'subject': subjcol,
                        'group': groupcol,
@@ -230,8 +222,6 @@ savedf = pd.DataFrame({'subject': subjcol,
                        'response': responsecol,
                        'pregenerated': fixed,
                        'grammaticality': grammatical,
-                       'hilo_grammaticality': hilo_grammatical,
-                       'eq_grammaticality': eq_grammatical,
                        'bin_grammaticality': bin_grammatical})
 savedf.to_csv(os.path.join(output_path,'SequenceProduction_data.csv'), index=False)
 
@@ -264,9 +254,6 @@ for subject in subjlist:
     
     block_list = sorted(glob(os.path.join(subject,subj+'*_post','*block*')))  
     if len(block_list) > 0:
-        tmp = pd.read_table(os.path.join(os.path.dirname(block_list[0]),'settings.txt'),sep=':')
-        group = tmp.iloc[1,1]
-        grammar_version = tmp.iloc[2,1]
         for block_itr in range(len(block_list)):
             block_data = pd.read_csv(block_list[block_itr])
             if len(block_data)>45: #Quick fix. Check why this is
@@ -290,7 +277,6 @@ for subject in subjlist:
             RTcol.extend(block_data['reaction_time'].tolist())
             responsecol.extend(block_data['response'].tolist())
             accuracycol.extend(block_data['accuracy'].tolist())
-            hilo_col.extend(getTransProb('8020',block_data['trial'].tolist(),grammar_version))
             block_cond = 'grammatical'
         
         #Check if there were random trials in (non-NA) trials, if so the block was random
@@ -307,7 +293,9 @@ savedf = pd.DataFrame({'subject': subjcol,
                        'RT': RTcol,
                        'response': responsecol,
                        'accuracy': accuracycol,
-                       'handshift': handshiftcol,
-                       'hilo_transprob': hilo_col})
+                       'handshift': handshiftcol})
 savedf.to_csv(os.path.join(output_path,'PostSRTT_data_updated.csv'), index=False)
         
+
+#%% Oral production
+

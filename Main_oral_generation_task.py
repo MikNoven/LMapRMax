@@ -56,7 +56,7 @@ def controlled_e():
 
 #%% Make a save folder with date stamp
 def make_savefolder(save_path, subj):
-    savefolder = os.path.join(save_path,subj+'_'+date.today().isoformat()+'_generation')
+    savefolder = os.path.join(save_path,subj,subj+'_'+date.today().isoformat()+'_oralgeneration')
     if os.path.exists(savefolder):
         savefolder = "error"
     else:
