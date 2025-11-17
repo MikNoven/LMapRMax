@@ -63,7 +63,7 @@ def getGrammarScores(responses,seq,grammar,gr):
     return grammarscores
 
 def getTransProb(group,cuelist,grammar_version):
-    grammar = gramstim.getGrammar(group, True, grammar_version)
+    grammar = gramstim.getGrammar(group, False, grammar_version)
     transprob = []
     transprob.append(np.nan)
     for itr in range(1,len(cuelist)):

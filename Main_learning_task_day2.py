@@ -83,7 +83,7 @@ def get_rel_08(block_stimuli,grammar):
     return count_08/trialcounter
 
 #%% Define the hardware
-cedrus_RB840 = True #Whether to use Cedrus or keyboard. (affects which buttons to use.)
+cedrus_RB840 = False #Whether to use Cedrus or keyboard. (affects which buttons to use.)
 mon = monitors.Monitor('SonyG55')
 mon.setSizePix((2560,1600))
 winsize=(1080,720)
@@ -143,6 +143,9 @@ trials_in_accuracy_average = 10 #Number of trials that go into the running avera
 guide_accuracy_threshold = 0.7 #Average accuracy 
 nbrOfGuidePeek = 2 #Number of trials that the guide stays on. 
 
+#Also include 2 erroneous elements per sequence in blocks 9-13
+blockstart_err = 8
+nbrOfErrorblocks = 4
 trial_pause = 0.05 #Pause between trials to make the mapping more clear.
 nbrOfBlocks = 15 
 lengthOfSequences = 8 #Number of presses per sequence.
@@ -424,7 +427,12 @@ for block_itr in range(nbrOfBlocks):
     #Get sequences for the block. (Separate class.)
     if grammar_type == 'random':
         block_trials = gstim.getRandomSequences(lengthOfSequences,sequencesPerBlock,cedrus_RB840)
+    elif block_itr >= blockstart_err and block_itr < (blockstart_err+nbrOfErrorblocks):
+        print("In error")
+        block_trials = gstim.getErrorSequences(lengthOfSequences,sequencesPerBlock,\
+                                              grammar_type,savefolder,block_itr+1,subj,cedrus_RB840,nbrOfStartKeys,grammar_version)
     else:
+        print("In not pregen")
         gen_block=True
         while gen_block:
             block_trials = gstim.getGrammarSequences(lengthOfSequences,sequencesPerBlock,\

@@ -125,7 +125,7 @@ while loop_subjDial:
     savefolder = make_savefolder(save_path, subj)
     if savefolder == "" or savefolder == "error":
         title_text = "Subject ID already tested today!"
-    elif not os.path.exists(os.path.join(settings_path,subj+'.txt')):
+    elif not os.path.exists(os.path.join(settings_path,subj+'.csv')):
         title_text= "No settings file specified for Subject ID."
     else:
         loop_subjDial = False
@@ -155,6 +155,11 @@ instr_image_stim = ImageStim(win, image='Instructions_figure.jpeg')
 instr_image_stim.draw()
 welcome_text.draw()
 win.flip()
+welcome_text = TextStim(win, welcome_string, pos=(0.0, 0.8), color=(1, 1, 1), units = "norm", height = 0.05, wrapWidth=0.8)
+instr_image_stim = ImageStim(win, image='Instructions_figure.jpeg')
+instr_image_stim.draw()
+welcome_text.draw()
+win.flip()
 #Wait until subject has pressed enter or escape
 #kb = Keyboard()
 response = event.waitKeys(keyList=continue_keys+['escape'], clearEvents=True)
@@ -164,6 +169,9 @@ if response[-1] in continue_keys:
     win.flip()
 if 'escape' in response:
     controlled_e()
+
+tmp_sound = Sound(os.path.join(audstim_path,'silence.wav'))
+tmp_sound.play()
 
 clock = core.Clock()
 
@@ -205,6 +213,9 @@ for block_itr in range(nbrOfBlocks*len(post_test_versions)):
     fix_text = TextStim(win, "+", color=(1, 1, 1), colorSpace='rgb')
     fix_text.draw()
     win.flip()
+    fix_text = TextStim(win, "+", color=(1, 1, 1), colorSpace='rgb')
+    fix_text.draw()
+    win.flip()
     
     for trial_itr in range(len(block_trials)):
         
@@ -232,7 +243,13 @@ for block_itr in range(nbrOfBlocks*len(post_test_versions)):
                     block_feedbackGiven.append(1)
                     feedback_text.draw()
                     win.flip()
+                    feedback_text = TextStim(win, msg_text, color=(1, 1, 1), colorSpace='rgb')
+                    block_feedbackGiven.append(1)
+                    feedback_text.draw()
+                    win.flip()
                     core.wait(1.5)
+                    instr_image_stim.draw()
+                    win.flip()
                     instr_image_stim.draw()
                     win.flip()
         else:
@@ -280,10 +297,17 @@ for block_itr in range(nbrOfBlocks*len(post_test_versions)):
             pause_stim = TextStim(win, pause_text+str(pause_itr+1)+"/"+str(pause_block_length), color=(1, 1, 1), colorSpace='rgb')
             pause_stim.draw()
             win.flip()
+            pause_stim = TextStim(win, pause_text+str(pause_itr+1)+"/"+str(pause_block_length), color=(1, 1, 1), colorSpace='rgb')
+            pause_stim.draw()
+            win.flip()
             core.wait(1)
 
 
 #%% Thank the participant and quit the program
+end_of_experiment_text = "Great job! You are now done with this part of the experiment!\nPress "+continue_key_name+" to continue."
+end_of_experiment_stim = TextStim(win, end_of_experiment_text, color=(1, 1, 1), colorSpace='rgb')
+end_of_experiment_stim.draw()
+win.flip()
 end_of_experiment_text = "Great job! You are now done with this part of the experiment!\nPress "+continue_key_name+" to continue."
 end_of_experiment_stim = TextStim(win, end_of_experiment_text, color=(1, 1, 1), colorSpace='rgb')
 end_of_experiment_stim.draw()

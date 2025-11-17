@@ -132,6 +132,31 @@ def rndGrammarChoice(lengthOfSequences, startkey, cue_positions, grammar):
         prev_element = tmp_choice
     
     return sequence
+
+#%% Generate a sequence from grammar
+#Just assume 2 errors per sequence. 
+def rndErrorChoice(lengthOfSequences, startkey, cue_positions, grammar, inv_grammar):
+    sequence = []
+    generrors=True
+    tmp_seq_element_1 = random.randrange(1,lengthOfSequences)
+    while generrors:
+        #Generate number of errors, assuming that the number is lower than sequence length
+        tmp_seq_element_2 = random.randrange(1,lengthOfSequences)
+        if tmp_seq_element_1!=tmp_seq_element_2:
+            error_items = [tmp_seq_element_1, tmp_seq_element_2]
+            generrors=False
+    
+    prev_element = startkey
+    for stim_itr in range(lengthOfSequences-1):
+        if stim_itr in error_items:
+            tmp_choice = random.choices(cue_positions, weights=inv_grammar.iloc[cue_positions.index(prev_element)])[0]
+        else: 
+            tmp_choice = random.choices(cue_positions, weights=grammar.iloc[cue_positions.index(prev_element)])[0]
+        sequence.append(tmp_choice)
+        prev_element = tmp_choice
+    
+    return sequence
+    
     
 #%% Define and print figure of grammar
 def characterize_grammar_block(block_stim,grammar,grammar_type,save_path,block_nbr,subject):
@@ -173,7 +198,7 @@ Code for generating SRTT sequences with 6 visual cue positions corresponding to
 index, middle, or ring finger on either hand.
 grammar_type is either '8020' or '5050'.
 """
-def getGrammarSequences(lengthOfSequences,sequencesPerBlock,grammar_type,characterize_block,save_path,block_nbr,subject,cedrus_RB840,nbrOfStartKeys,grammar_version):
+def getGrammarSequences(lengthOfSequences,sequencesPerBlock,grammar_type,save_path,block_nbr,subject,cedrus_RB840,nbrOfStartKeys,grammar_version):
     global cue_positions
     if cedrus_RB840:
         cue_positions = ['a', 'b', 'c', 'f', 'g', 'h']
@@ -196,9 +221,6 @@ def getGrammarSequences(lengthOfSequences,sequencesPerBlock,grammar_type,charact
         block_stim.append(start_key)
         block_stim = block_stim + rndGrammarChoice(lengthOfSequences, start_key, cue_positions, grammar)
         block_stim.append('pause')
-    
-    if characterize_block:
-        characterize_grammar_block(block_stim,grammar,grammar_type,save_path,block_nbr,subject)
     
     return block_stim
         
@@ -316,6 +338,40 @@ def generateFixed8020Block(lengthOfSequences,sequencesPerBlock,cedrus_RB840,nbrO
         block_stim = block_stim + [start_key] + tmp_seq 
         block_stim.append('pause')
         
+    return block_stim
+
+#%% Get error-infused block trials
+def getErrorSequences(lengthOfSequences,sequencesPerBlock,grammar_type,save_path,block_nbr,subject,cedrus_RB840,nbrOfStartKeys,grammar_version):
+    global cue_positions
+    if cedrus_RB840:
+        cue_positions = ['a', 'b', 'c', 'f', 'g', 'h']
+        if nbrOfStartKeys==1:
+            start_stim = ['c']
+        elif nbrOfStartKeys==2:
+            start_stim = ['c','f']
+    else:
+        cue_positions = ['s', 'd', 'f', 'j', 'k', 'l']
+        if nbrOfStartKeys==1:
+            start_stim = ['f']
+        elif nbrOfStartKeys==2:
+            start_stim = ['f', 'j']
+      
+    block_stim = []
+    grammar = getGrammar(grammar_type,cedrus_RB840,grammar_version)
+    
+    inv_grammar = grammar.replace(0, 1).replace(0.2,0).replace(0.8,0)
+    grammar_cols = inv_grammar.columns
+    for col in grammar_cols:
+        inv_grammar.loc[col, col]=0
+    
+    
+    for seq_itr in range(sequencesPerBlock):
+        start_key = random.choices(start_stim)[0]
+        block_stim.append(start_key)
+        block_stim = block_stim + rndErrorChoice(lengthOfSequences, start_key, cue_positions, grammar, inv_grammar)
+        
+        block_stim.append('pause')
+
     return block_stim
 
 #%% Get predefined block guaranteed to include 20% transitions

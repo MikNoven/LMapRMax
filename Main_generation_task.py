@@ -142,11 +142,18 @@ gentest_start_text = "In the previous part of the experiment,\nthe cues were pre
 gentest_start_stim = TextStim(win, gentest_start_text, color=(1, 1, 1), colorSpace='rgb')
 gentest_start_stim.draw()
 win.flip()
+gentest_start_text = "In the previous part of the experiment,\nthe cues were presented in sequences\nthat came from a system.\nPress "+continue_key_name+" to continue."
+gentest_start_stim = TextStim(win, gentest_start_text, color=(1, 1, 1), colorSpace='rgb')
+gentest_start_stim.draw()
+win.flip()
 response = event.waitKeys(keyList=continue_keys+['escape'], clearEvents = True)
 if response[-1] in continue_keys:
     print('First gentest text done.')
 elif response[-1]=='escape':
     controlled_e()
+
+tmp_sound = Sound(os.path.join(audstim_path,'silence.wav'))
+tmp_sound.play()
 
 clock = core.Clock()
 #%%Generation task grammatical.
@@ -155,6 +162,9 @@ if pregeneratedGenerationTask == 0 or grammar_type == 'random':
 else:
     gentest_grammar_text = "We now ask you to freely generate "+str(nbrOfGeneratedSequences)+" sequences\nfrom that system.\nYou will get "+str(pregeneratedGenerationTask)+" keys to press to start you off\nPress "+continue_key_name+" to continue."
    
+gentest_grammar_stim = TextStim(win, gentest_grammar_text, color=(1, 1, 1), colorSpace='rgb')
+gentest_grammar_stim.draw()
+win.flip()
 gentest_grammar_stim = TextStim(win, gentest_grammar_text, color=(1, 1, 1), colorSpace='rgb')
 gentest_grammar_stim.draw()
 win.flip()
@@ -176,6 +186,10 @@ if pregeneratedGenerationTask == 0 or grammar_type == 'random':
         gen_seq_text_stim = TextStim(win, gen_seq_text, color=(1, 1, 1), colorSpace='rgb')
         gen_seq_text_stim.draw()
         win.flip()
+        gen_seq_text="Sequence "+str(gen_itr+1)+" of "+str(nbrOfGeneratedSequences)
+        gen_seq_text_stim = TextStim(win, gen_seq_text, color=(1, 1, 1), colorSpace='rgb')
+        gen_seq_text_stim.draw()
+        win.flip()
         core.wait(1)
         for seq_itr in range(lengthOfSequences):
             t_init = clock.getTime()
@@ -191,6 +205,10 @@ if pregeneratedGenerationTask == 0 or grammar_type == 'random':
                 controlled_e()
 else:
     for gen_itr in range(nbrOfGeneratedSequences):
+        gen_seq_text="Sequence "+str(gen_itr+1)+" of "+str(nbrOfGeneratedSequences)
+        gen_seq_text_stim = TextStim(win, gen_seq_text, color=(1, 1, 1), colorSpace='rgb')
+        gen_seq_text_stim.draw()
+        win.flip()
         gen_seq_text="Sequence "+str(gen_itr+1)+" of "+str(nbrOfGeneratedSequences)
         gen_seq_text_stim = TextStim(win, gen_seq_text, color=(1, 1, 1), colorSpace='rgb')
         gen_seq_text_stim.draw()
@@ -221,7 +239,11 @@ else:
             elif response[-1]=='escape':
                 controlled_e()
         if gen_itr < nbrOfGeneratedSequences-1:
-            gentest_seq_text = "Great!\nPress space when you're ready for the next one."
+            gentest_seq_text = "Great!\nPress "+continue_key_name+" when you're ready for the next one."
+            gentest_seq_stim = TextStim(win, gentest_seq_text, color=(1, 1, 1), colorSpace='rgb')
+            gentest_seq_stim.draw()
+            win.flip()
+            gentest_seq_text = "Great!\nPress "+continue_key_name+" when you're ready for the next one."
             gentest_seq_stim = TextStim(win, gentest_seq_text, color=(1, 1, 1), colorSpace='rgb')
             gentest_seq_stim.draw()
             win.flip()
@@ -251,6 +273,10 @@ gentest_random_text = "We now ask you to freely generate "+str(nbrOfGeneratedSeq
 gentest_random_stim = TextStim(win, gentest_random_text, color=(1, 1, 1), colorSpace='rgb')
 gentest_random_stim.draw()
 win.flip()
+gentest_random_text = "We now ask you to freely generate "+str(nbrOfGeneratedSequences)+" sequences\nthat you are sure is not\nfrom that sequence.\nYou are not allowed to press the same key twice in a row.\nPress "+continue_key_name+" to continue."
+gentest_random_stim = TextStim(win, gentest_random_text, color=(1, 1, 1), colorSpace='rgb')
+gentest_random_stim.draw()
+win.flip()
 response = event.waitKeys(keyList=continue_keys+['escape'], clearEvents = True)
 if response[-1] in continue_keys:
     print('Generation task random.')
@@ -264,6 +290,10 @@ gen_seq = np.zeros(nbrOfGeneratedSequences*lengthOfSequences)
 gen_pregenerated = np.zeros(nbrOfGeneratedSequences*lengthOfSequences)
 if pregeneratedGenerationTask == 0 or grammar_type == 'random':
     for gen_itr in range(nbrOfGeneratedSequences):
+        gen_seq_text="Sequence "+str(gen_itr+1)+" of "+str(nbrOfGeneratedSequences)
+        gen_seq_text_stim = TextStim(win, gen_seq_text, color=(1, 1, 1), colorSpace='rgb')
+        gen_seq_text_stim.draw()
+        win.flip()
         gen_seq_text="Sequence "+str(gen_itr+1)+" of "+str(nbrOfGeneratedSequences)
         gen_seq_text_stim = TextStim(win, gen_seq_text, color=(1, 1, 1), colorSpace='rgb')
         gen_seq_text_stim.draw()
@@ -284,6 +314,10 @@ if pregeneratedGenerationTask == 0 or grammar_type == 'random':
                 controlled_e()
 else:
     for gen_itr in range(nbrOfGeneratedSequences):
+        gen_seq_text="Sequence "+str(gen_itr+1)+" of "+str(nbrOfGeneratedSequences)
+        gen_seq_text_stim = TextStim(win, gen_seq_text, color=(1, 1, 1), colorSpace='rgb')
+        gen_seq_text_stim.draw()
+        win.flip()
         gen_seq_text="Sequence "+str(gen_itr+1)+" of "+str(nbrOfGeneratedSequences)
         gen_seq_text_stim = TextStim(win, gen_seq_text, color=(1, 1, 1), colorSpace='rgb')
         gen_seq_text_stim.draw()
@@ -321,7 +355,11 @@ else:
                 controlled_e()
                 
         if gen_itr < nbrOfGeneratedSequences-1:
-            gentest_seq_text = "Great!\nPress space when you're ready for the next one."
+            gentest_seq_text = "Great!\nPress "+continue_key_name+" when you're ready for the next one."
+            gentest_seq_stim = TextStim(win, gentest_seq_text, color=(1, 1, 1), colorSpace='rgb')
+            gentest_seq_stim.draw()
+            win.flip()
+            gentest_seq_text = "Great!\nPress "+continue_key_name+" when you're ready for the next one."
             gentest_seq_stim = TextStim(win, gentest_seq_text, color=(1, 1, 1), colorSpace='rgb')
             gentest_seq_stim.draw()
             win.flip()
@@ -340,6 +378,10 @@ gen_rand_save = pd.DataFrame({'sequence':gen_seq,
 gen_rand_save.to_csv(os.path.join(savefolder,subj+'_generation_random.csv')) #Maybe save as pickle instead.
 
 #%% Thank the participant and quit the program
+end_of_experiment_text = "Thank you for participating in our experiment!"
+end_of_experiment_stim = TextStim(win, end_of_experiment_text, color=(1, 1, 1), colorSpace='rgb')
+end_of_experiment_stim.draw()
+win.flip()
 end_of_experiment_text = "Thank you for participating in our experiment!"
 end_of_experiment_stim = TextStim(win, end_of_experiment_text, color=(1, 1, 1), colorSpace='rgb')
 end_of_experiment_stim.draw()

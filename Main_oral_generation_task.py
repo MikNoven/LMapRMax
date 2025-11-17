@@ -144,11 +144,18 @@ gentest_start_text = "In the previous part of the experiment,\nthe cues were pre
 gentest_start_stim = TextStim(win, gentest_start_text, color=(1, 1, 1), colorSpace='rgb')
 gentest_start_stim.draw()
 win.flip()
+gentest_start_text = "In the previous part of the experiment,\nthe cues were presented in sequences\nthat came from a system.\nPress "+continue_key_name+" to continue."
+gentest_start_stim = TextStim(win, gentest_start_text, color=(1, 1, 1), colorSpace='rgb')
+gentest_start_stim.draw()
+win.flip()
 response = event.waitKeys(keyList=continue_keys+['escape'], clearEvents = True)
 if response[-1] in continue_keys:
     print('First gentest text done.')
 elif response[-1]=='escape':
     controlled_e()
+
+tmp_sound = Sound(os.path.join(audstim_path,'silence.wav'))
+tmp_sound.play()
 
 clock = core.Clock()
 #%%Generation task grammatical.
@@ -171,6 +178,10 @@ for gen_itr in range(nbrOfGeneratedSequences):
     gen_seq_text_stim = TextStim(win, gen_seq_text, color=(1, 1, 1), colorSpace='rgb')
     gen_seq_text_stim.draw()
     win.flip()
+    gen_seq_text="Sequence "+str(gen_itr+1)+" of "+str(nbrOfGeneratedSequences)
+    gen_seq_text_stim = TextStim(win, gen_seq_text, color=(1, 1, 1), colorSpace='rgb')
+    gen_seq_text_stim.draw()
+    win.flip()
     core.wait(0.5)
     pregen_seq = gstim.getPreGeneratedSequences(pregeneratedGenerationTask,'5050',cedrus_RB840,nbrOfStartKeys,grammar_version)
     for pregen_itr in range(pregeneratedGenerationTask):
@@ -180,6 +191,10 @@ for gen_itr in range(nbrOfGeneratedSequences):
         core.wait(sound_interval_time)
 
 
+    gentest_pause_text = "Press "+continue_key_name+" to continue."
+    gentest_pause_stim = TextStim(win, gentest_pause_text, color=(1, 1, 1), colorSpace='rgb')
+    gentest_pause_stim.draw()
+    win.flip()
     gentest_pause_text = "Press "+continue_key_name+" to continue."
     gentest_pause_stim = TextStim(win, gentest_pause_text, color=(1, 1, 1), colorSpace='rgb')
     gentest_pause_stim.draw()
@@ -201,6 +216,10 @@ gentest_random_text = "We now ask you to freely speak "+str(nbrOfGeneratedSequen
 gentest_random_stim = TextStim(win, gentest_random_text, color=(1, 1, 1), colorSpace='rgb')
 gentest_random_stim.draw()
 win.flip()
+gentest_random_text = "We now ask you to freely speak "+str(nbrOfGeneratedSequences)+" sequences\nthat you are sure is not\nfrom that sequence.\nYou are not allowed to say the same sound two times in a row.\nPress "+continue_key_name+" to continue."
+gentest_random_stim = TextStim(win, gentest_random_text, color=(1, 1, 1), colorSpace='rgb')
+gentest_random_stim.draw()
+win.flip()
 response = event.waitKeys(keyList=continue_keys+['escape'], clearEvents = True)
 if response[-1] in continue_keys:
     print('Generation task random.')
@@ -208,6 +227,10 @@ elif response[-1]=='escape':
     controlled_e()
 
 for gen_itr in range(nbrOfGeneratedSequences):
+    gen_seq_text="Sequence "+str(gen_itr+1)+" of "+str(nbrOfGeneratedSequences)
+    gen_seq_text_stim = TextStim(win, gen_seq_text, color=(1, 1, 1), colorSpace='rgb')
+    gen_seq_text_stim.draw()
+    win.flip()
     gen_seq_text="Sequence "+str(gen_itr+1)+" of "+str(nbrOfGeneratedSequences)
     gen_seq_text_stim = TextStim(win, gen_seq_text, color=(1, 1, 1), colorSpace='rgb')
     gen_seq_text_stim.draw()
@@ -225,6 +248,10 @@ for gen_itr in range(nbrOfGeneratedSequences):
     gentest_pause_stim = TextStim(win, gentest_pause_text, color=(1, 1, 1), colorSpace='rgb')
     gentest_pause_stim.draw()
     win.flip()
+    gentest_pause_text = "Press "+continue_key_name+" to continue."
+    gentest_pause_stim = TextStim(win, gentest_pause_text, color=(1, 1, 1), colorSpace='rgb')
+    gentest_pause_stim.draw()
+    win.flip()
     response = event.waitKeys(keyList=continue_keys+['escape'], clearEvents = True)
     if response[-1] in continue_keys:
         print('Second gentest text done.')
@@ -236,5 +263,8 @@ end_of_experiment_text = "Thank you for participating in our experiment!"
 end_of_experiment_stim = TextStim(win, end_of_experiment_text, color=(1, 1, 1), colorSpace='rgb')
 end_of_experiment_stim.draw()
 win.flip()
+end_of_experiment_text = "Thank you for participating in our experiment!"
+end_of_experiment_stim = TextStim(win, end_of_experiment_text, color=(1, 1, 1), colorSpace='rgb')
+end_of_experiment_stim.draw()
 core.wait(3)
 controlled_e()
