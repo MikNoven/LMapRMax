@@ -63,7 +63,7 @@ def getGrammarScores(responses,seq,grammar,gr):
     return grammarscores
 
 def getTransProb(group,cuelist,grammar_version):
-    grammar = gramstim.getGrammar(group, False, grammar_version)
+    grammar = gramstim.getGrammar(group, True, grammar_version)
     transprob = []
     transprob.append(np.nan)
     for itr in range(1,len(cuelist)):
@@ -80,6 +80,8 @@ output_path = '/Users/gdf724/Data/LMapRMax/Piloting/Postproc'
 
 subjlist = glob(os.path.join(datapath,'*'))
 subjlist.remove(output_path)
+grammar_version_col = []
+subjcol_gv = []
 
 nbrOfDays = 2
 nbrOfBlocks = 15
@@ -128,6 +130,9 @@ for subject in subjlist:
         tmp = pd.read_table(os.path.join(learning_list[day_itr],'settings.txt'),sep=':')
         group = tmp.iloc[8,1]
         grammar_version = tmp.iloc[9,1]
+        if day_itr==0:
+            grammar_version_col.append(grammar_version)
+            subjcol_gv.append(subj)
 
         for block_itr in range(len(block_list)):
             block_data = pd.read_csv(os.path.join(block_list[block_itr]))
@@ -148,7 +153,7 @@ for subject in subjlist:
             responsecol.extend(block_data['response'].tolist())
             accuracycol.extend(block_data['accuracy'].tolist())
             guideshowncol.extend(block_data['guide_shown'].tolist())
-            
+
 savedf = pd.DataFrame({'subject': subjcol,
                        'group': groupcol,
                        'day': daycol,
@@ -190,6 +195,7 @@ for subject in subjlist:
     subj = os.path.basename(subject)
     subj = subj.replace(" ","")
     
+    grammar_version = grammar_version_col[subjcol_gv.index(subj)]
     production_list = sorted(glob(os.path.join(subject,subj+'*_generation','*generation*')))
     if len(production_list) > 1:
         tmp = pd.read_table(os.path.join(os.path.dirname(production_list[0]),'settings.txt'),sep=':')
@@ -251,7 +257,7 @@ hilo_col =[]
 for subject in subjlist:
     subj = os.path.basename(subject)
     subj = subj.replace(" ","")
-    
+    grammar_version = grammar_version_col[subjcol_gv.index(subj)]
     block_list = sorted(glob(os.path.join(subject,subj+'*_post','*block*')))  
     if len(block_list) > 0:
         for block_itr in range(len(block_list)):
