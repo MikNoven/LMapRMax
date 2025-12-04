@@ -148,13 +148,23 @@ def rndErrorChoice(lengthOfSequences, startkey, cue_positions, grammar, inv_gram
     sequence = []
     generrors=True
     tmp_seq_element_1 = random.randrange(1,lengthOfSequences)
-    while generrors:
-        #Generate number of errors, assuming that the number is lower than sequence length
-        tmp_seq_element_2 = random.randrange(1,lengthOfSequences)
-        if tmp_seq_element_1!=tmp_seq_element_2:
-            error_items = [tmp_seq_element_1, tmp_seq_element_2]
-            generrors=False
-    
+    if lengthOfSequences<10:
+        while generrors:
+            #Generate number of errors, assuming that the number is lower than sequence length
+            tmp_seq_element_2 = random.randrange(1,lengthOfSequences)
+            if tmp_seq_element_1!=tmp_seq_element_2:
+                error_items = [tmp_seq_element_1, tmp_seq_element_2]
+                generrors=False
+    else:
+        error_items=[tmp_seq_element_1]
+        while generrors:
+            #Generate number of errors, assuming that the number is lower than sequence length
+            tmp_seq_element_X = random.randrange(1,lengthOfSequences)
+            if tmp_seq_element_X not in error_items:
+                error_items.append(tmp_seq_element_X)
+            if len(error_items)==10:
+                generrors=False
+        
     prev_element = startkey
     for stim_itr in range(lengthOfSequences-1):
         if stim_itr in error_items:
@@ -163,7 +173,7 @@ def rndErrorChoice(lengthOfSequences, startkey, cue_positions, grammar, inv_gram
             tmp_choice = random.choices(cue_positions, weights=grammar.iloc[cue_positions.index(prev_element)])[0]
         sequence.append(tmp_choice)
         prev_element = tmp_choice
-    
+
     return sequence
     
     
