@@ -122,12 +122,21 @@ def calcGramScore_seq(seq_stim,grammar):
     return gramscore
 
 #%% Generate a sequence from grammar
+#2025-12-04 Added check of loops.
 def rndGrammarChoice(lengthOfSequences, startkey, cue_positions, grammar):
     sequence = []
-    
+    print("Generating")
     prev_element = startkey
     for stim_itr in range(lengthOfSequences-1):
         tmp_choice = random.choices(cue_positions, weights=grammar.iloc[cue_positions.index(prev_element)])[0]
+        if stim_itr > 7:
+            if sequence[stim_itr-8]==sequence[stim_itr-5] and sequence[stim_itr-8]==sequence[stim_itr-2]:
+                if sequence[stim_itr-7]==sequence[stim_itr-4] and sequence[stim_itr-7]==sequence[stim_itr-1]:
+                    if sequence[stim_itr-6]==sequence[stim_itr-3] and sequence[stim_itr-6]==tmp_choice:
+                        tmp_row=grammar.iloc[cue_positions.index(prev_element)]
+                        tmp_choice=tmp_row[tmp_row==0.2].index[0]
+                        print("Loop stop")
+            
         sequence.append(tmp_choice)
         prev_element = tmp_choice
     
@@ -197,6 +206,7 @@ def characterize_grammar_block(block_stim,grammar,grammar_type,save_path,block_n
 Code for generating SRTT sequences with 6 visual cue positions corresponding to 
 index, middle, or ring finger on either hand.
 grammar_type is either '8020' or '5050'.
+2025-12-04 Added check of loops. 
 """
 def getGrammarSequences(lengthOfSequences,sequencesPerBlock,grammar_type,save_path,block_nbr,subject,cedrus_RB840,nbrOfStartKeys,grammar_version):
     global cue_positions
