@@ -75,39 +75,6 @@ def getTransProb(group,cuelist,grammar_version):
             
     return transprob
 
-def key2sound(key):
-    if key=='a':
-        sound='fi'
-    elif key=='b':
-        sound='po'
-    elif key=='c':
-        sound='le'
-    elif key=='f':
-        sound='ka'
-    elif key=='g':
-        sound='ty'
-    elif key=='h':
-        sound='jå'
-    
-    return sound
-
-def load_generation(subject, subj, condition):
-    oral_data=pd.read_excel(glob(os.path.join(subject,subj+'*_oralgeneration','oral.xlsx'))[0],sheet_name=condition) 
-    if condition=="Inclusion":
-        pregen_data=pd.read_csv(glob(os.path.join(subject,subj+'*_oralgeneration',subj+'_oral_grammatical.csv'))[0])
-    elif condition=="Exclusion":
-        pregen_data=pd.read_csv(glob(os.path.join(subject,subj+'*_oralgeneration',subj+'_oral_ungrammatical.csv'))[0])
-   
-    indx_itr=0
-    for itr in range(len(oral_data)):
-        if oral_data["premade"][itr]==1:
-            oral_data.loc[itr,"response"] = key2sound(pregen_data["Pregenerated_item"][indx_itr])
-            indx_itr=indx_itr+1
-            
-    
-    return oral_data
-    
-
 #%% Define variables
 datapath = '/Users/gdf724/Data/LMapRMax'
 output_path = '/Users/gdf724/Data/LMapRMax/Postproc'
@@ -139,6 +106,7 @@ for seqitr in range(nbrOfSequences):
         indx_itr = indx_itr+1
 
 subjcol = []
+groupcol = []
 gramtypecol = []
 daycol = []
 blockcol = []
@@ -175,6 +143,7 @@ for subject in subjlist:
             prob_hilo_cue_col.extend(getTransProb('8020',block_data['trial'].tolist(),grammar_version))
             block_data=block_data.drop(block_data[block_data['trial']=='pause'].index)
             subjcol.extend([subj]*len(seq_nbr_template))
+            groupcol.extend([group]*len(seq_nbr_template))
             gramtypecol.extend([grammar_version]*len(seq_nbr_template))
             daycol.extend([day_itr+1]*len(seq_nbr_template))
             blockcol.extend([block_itr+1]*len(seq_nbr_template))
@@ -190,6 +159,7 @@ for subject in subjlist:
                 guideshowncol.extend([np.nan]*len(block_data['trial'].tolist()))
 
 savedf = pd.DataFrame({'subject': subjcol,
+                       'group': groupcol,
                        'day': daycol,
                        'block': blockcol,
                        'sequence': sequence_nbr_col,
@@ -207,13 +177,13 @@ savedf.to_csv(os.path.join(output_path,'LearningSRTT_data.csv'), index=False)
         
 #%% Sequence production
 element_nbr_template = []
-nbrOfItems_prod=8
 
 for seqitr in range(8):
-    for ittr in range(nbrOfItems_prod):
+    for ittr in range(nbrOfItems):
         element_nbr_template.append(ittr+1)
 
 subjcol = []
+groupcol = []
 conditioncol = []
 sequence_nbr_col = []
 element_nbr_col = []
@@ -244,6 +214,7 @@ for subject in subjlist:
             
             tmp_data = pd.read_csv(production_list[prod_itr])
             subjcol.extend([subj]*len(tmp_data))
+            groupcol.extend([group]*len(tmp_data))
             conditioncol.extend([gr]*len(tmp_data))
             sequence_nbr_col.extend(tmp_data['sequence'].tolist())
             element_nbr_col.extend(element_nbr_template)
@@ -253,6 +224,7 @@ for subject in subjlist:
             grammatical.extend(getGrammarScores(tmp_data['response'].tolist(),tmp_data['sequence'].tolist(),grammar,gr))
             bin_grammatical.extend([1 if x>0 and not np.isnan(x) else 0 for x in getGrammarScores(tmp_data['response'].tolist(),tmp_data['sequence'].tolist(),grammar,gr)])
 savedf = pd.DataFrame({'subject': subjcol,
+                       'group': groupcol,
                        'condition': conditioncol,
                        'sequence': sequence_nbr_col,
                        'element': element_nbr_col,
@@ -266,13 +238,13 @@ savedf.to_csv(os.path.join(output_path,'SequenceProduction_data.csv'), index=Fal
 #%% Post SRTT
 element_nbr_template = []
 seq_nbr_template = []
-nbrOfItems_post=8
 for seqitr in range(5):
-    for ittr in range(nbrOfItems_post):
+    for ittr in range(nbrOfItems):
         seq_nbr_template.append(seqitr+1)
         element_nbr_template.append(ittr+1)
 
 subjcol = []
+groupcol = []
 probcond = []
 sequence_nbr_col = []
 element_nbr_col = []
@@ -307,6 +279,7 @@ for subject in subjlist:
                 block_cond = 'grammatical'
             block_data=block_data.drop(block_data[block_data['trial']=='pause'].index,  )
             subjcol.extend([subj]*len(block_data))
+            groupcol.extend([group]*len(block_data))
             probcond.extend([block_cond]*len(block_data))
             sequence_nbr_col.extend(seq_nbr_template)
             element_nbr_col.extend(element_nbr_template)
@@ -321,6 +294,7 @@ for subject in subjlist:
         
             
 savedf = pd.DataFrame({'subject': subjcol,
+                       'group': groupcol,
                        'condition': probcond,
                        'sequence': sequence_nbr_col,
                        'element': element_nbr_col,
@@ -331,65 +305,130 @@ savedf = pd.DataFrame({'subject': subjcol,
                        'accuracy': accuracycol,
                        'handshift': handshiftcol})
 savedf.to_csv(os.path.join(output_path,'PostSRTT_data.csv'), index=False)
+        
 
-#%% Oral production
-element_nbr_template = []
-seq_nbr_template = []
-for seqitr in range(8):
-    for ittr in range(8):
-        seq_nbr_template.append(seqitr+1)
-        element_nbr_template.append(ittr+1)
+#%% Auditory and Visual RT tests
+#Four blocks in each. 
+#One long sequence. 
 
 subjcol = []
-conditioncol = []
+condcol = []
+blockcol = []
+cue_col = []
+RTcol = []
 responsecol = []
-fixed = []
-grammatical = []
-hilo_grammatical = []
-eq_grammatical = []
-bin_grammatical = []
-sequence_nbr_col = []
-element_nbr_col = []
+accuracycol = []
+handshiftcol = []
+#testorder=['grammatical']*4 + ['random']*4
+
 
 for subject in subjlist:
     subj = os.path.basename(subject)
     subj = subj.replace(" ","")
-    
-    grammar_version = grammar_version_col[subjcol_gv.index(subj)]
-    grammar = gramstim.getGrammar('8020', True, grammar_version)
-    grammar.columns=["fi", "po", "le", "ka", "ty", "jå"]
-    grammar.index=["fi", "po", "le", "ka", "ty", "jå"]           
-
-    oral_incl = load_generation(subject,subj,"Inclusion")
-    oral_incl['response'] = oral_incl['response'].str.strip()
-    subjcol.extend([subj]*len(oral_incl))
-    conditioncol.extend(["grammatical"]*len(oral_incl))
-    responsecol.extend(oral_incl['response'].tolist())
-    fixed.extend(oral_incl['premade'].tolist())
-    sequence_nbr_col.extend(seq_nbr_template)
-    element_nbr_col.extend(element_nbr_template)
-    grammatical.extend(getGrammarScores(oral_incl['response'].tolist(),seq_nbr_template,grammar,gr))
-    bin_grammatical.extend([1 if x>0 and not np.isnan(x) else 0 for x in getGrammarScores(oral_incl['response'].tolist(),seq_nbr_template,grammar,gr)])
-
-    oral_excl=load_generation(subject,subj,"Exclusion")            
-    subjcol.extend([subj]*len(oral_excl))
-    oral_excl['response'] = oral_excl['response'].str.strip()
-    conditioncol.extend(["ungrammatical"]*len(oral_excl))
-    responsecol.extend(oral_excl['response'])
-    fixed.extend(oral_excl['premade'])
-    sequence_nbr_col.extend(seq_nbr_template)
-    element_nbr_col.extend(element_nbr_template)
-    grammatical.extend(getGrammarScores(oral_excl['response'].tolist(),seq_nbr_template,grammar,gr))
-    bin_grammatical.extend([1 if x>0 and not np.isnan(x) else 0 for x in getGrammarScores(oral_excl['response'].tolist(),seq_nbr_template,grammar,gr)])
-
-
+    block_list = sorted(glob(os.path.join(subject,subj+'*_auditory_RTtest','*block*')))  
+    if len(block_list) > 0:
+        for block_itr in range(len(block_list)):
+            block_data = pd.read_csv(block_list[block_itr])
+            handshiftcol.extend(gethandshifts(block_data['trial'].tolist()))
+            block_data=block_data.drop(block_data[block_data['trial']=='pause'].index,  )
+            subjcol.extend([subj]*len(block_data))
+            condcol.extend(['auditory']*len(block_data))
+            blockcol.extend([block_itr+1]*len(block_data))
+            cue_col.extend(block_data['trial'].tolist())
+            RTcol.extend(block_data['reaction_time'].tolist())
+            responsecol.extend(block_data['response'].tolist())
+            accuracycol.extend(block_data['accuracy'].tolist())
+            
+    block_list = sorted(glob(os.path.join(subject,subj+'*_visual_RTtest','*block*')))  
+    if len(block_list) > 0:
+        for block_itr in range(len(block_list)):
+            block_data = pd.read_csv(block_list[block_itr])
+            handshiftcol.extend(gethandshifts(block_data['trial'].tolist()))
+            block_data=block_data.drop(block_data[block_data['trial']=='pause'].index,  )
+            subjcol.extend([subj]*len(block_data))
+            condcol.extend(['visual']*len(block_data))
+            blockcol.extend([block_itr+1]*len(block_data))
+            cue_col.extend(block_data['trial'].tolist())
+            RTcol.extend(block_data['reaction_time'].tolist())
+            responsecol.extend(block_data['response'].tolist())
+            accuracycol.extend(block_data['accuracy'].tolist())
+        
+        #Check if there were random trials in (non-NA) trials, if so the block was random
+        # otherwise grammatical
+        
+            
 savedf = pd.DataFrame({'subject': subjcol,
-                       'condition': conditioncol,
-                       'sequence': sequence_nbr_col,
-                       'element': element_nbr_col,
-                       'generation_time': gentimecol,
+                       'condition': condcol,
+                       'cue': cue_col,
+                       'block': blockcol,
+                       'RT': RTcol,
                        'response': responsecol,
-                       'pregenerated': fixed,
-                       'grammaticality': grammatical,
-                       'bin_grammaticality': bin_grammatical})
-savedf.to_csv(os.path.join(output_path,'OralProduction_data.csv'), index=False)
+                       'accuracy': accuracycol,
+                       'handshift': handshiftcol})
+savedf.to_csv(os.path.join(output_path,'RT_tests.csv'), index=False)
+
+
+#%% Oral production
+# element_nbr_template = []
+# seq_nbr_template = []
+# for seqitr in range(8):
+#     for ittr in range(8):
+#         seq_nbr_template.append(seqitr+1)
+#         element_nbr_template.append(ittr+1)
+
+# subjcol = []
+# groupcol = []
+# conditioncol = []
+# responsecol = []
+# fixed = []
+# grammatical = []
+# hilo_grammatical = []
+# eq_grammatical = []
+# bin_grammatical = []
+# sequence_nbr_col = []
+# element_nbr_col = []
+
+# for subject in subjlist:
+#     subj = os.path.basename(subject)
+#     subj = subj.replace(" ","")
+    
+#     grammar_version = grammar_version_col[subjcol_gv.index(subj)]
+#     grammar = gramstim.getGrammar('8020', True, grammar_version)
+#     grammar.columns=["fi", "po", "le", "ka", "ty", "jå"]
+#     grammar.index=["fi", "po", "le", "ka", "ty", "jå"]
+#     oral_incl=pd.read_excel(glob(os.path.join(subject,subj+'*_oralgeneration','oral.xlsx'))[0],sheet_name="Inclusion")
+#     oral_incl['response'] = oral_incl['response'].str.strip()
+#     subjcol.extend([subj]*len(oral_incl))
+#     groupcol.extend([group]*len(oral_incl))
+#     conditioncol.extend(["grammatical"]*len(oral_incl))
+#     responsecol.extend(oral_incl['response'].tolist())
+#     fixed.extend(oral_incl['premade'].tolist())
+#     sequence_nbr_col.extend(seq_nbr_template)
+#     element_nbr_col.extend(element_nbr_template)
+#     grammatical.extend(getGrammarScores(oral_incl['response'].tolist(),seq_nbr_template,grammar,gr))
+#     bin_grammatical.extend([1 if x>0 and not np.isnan(x) else 0 for x in getGrammarScores(oral_incl['response'].tolist(),seq_nbr_template,grammar,gr)])
+
+#     oral_excl=pd.read_excel(glob(os.path.join(subject,subj+'*_oralgeneration','oral.xlsx'))[0],sheet_name="Exclusion")            
+#     subjcol.extend([subj]*len(oral_excl))
+#     oral_excl['response'] = oral_excl['response'].str.strip()
+#     groupcol.extend([group]*len(oral_excl))
+#     conditioncol.extend(["ungrammatical"]*len(oral_excl))
+#     responsecol.extend(oral_excl['response'])
+#     fixed.extend(oral_excl['premade'])
+#     sequence_nbr_col.extend(seq_nbr_template)
+#     element_nbr_col.extend(element_nbr_template)
+#     grammatical.extend(getGrammarScores(oral_excl['response'].tolist(),seq_nbr_template,grammar,gr))
+#     bin_grammatical.extend([1 if x>0 and not np.isnan(x) else 0 for x in getGrammarScores(oral_excl['response'].tolist(),seq_nbr_template,grammar,gr)])
+
+
+# savedf = pd.DataFrame({'subject': subjcol,
+#                        'group': groupcol,
+#                        'condition': conditioncol,
+#                        'sequence': sequence_nbr_col,
+#                        'element': element_nbr_col,
+#                        'generation_time': gentimecol,
+#                        'response': responsecol,
+#                        'pregenerated': fixed,
+#                        'grammaticality': grammatical,
+#                        'bin_grammaticality': bin_grammatical})
+# savedf.to_csv(os.path.join(output_path,'OralProduction_data.csv'), index=False)
